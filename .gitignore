@@ -1,8 +1,25 @@
+### Maven ###
 /target/
+
+### STS / Eclipse ###
 .classpath
 .project
 .settings/
+.factorypath
+
+### Maven Wrapper ###
+.mvn/
+
+### IntelliJ ###
 .idea/
 *.iml
+
+### Logs ###
 *.log
+
+### OS ###
 .DS_Store
+Thumbs.db
+
+### Backup files ###
+*.save
