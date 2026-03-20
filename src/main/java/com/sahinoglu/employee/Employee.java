@@ -1,5 +1,6 @@
 package com.sahinoglu.employee;
 
+import com.sahinoglu.branch.Branch;
 import com.sahinoglu.center.Center;
 
 import jakarta.persistence.*;
@@ -14,7 +15,7 @@ public class Employee {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
+	private Long id;
 
 	@Column(nullable = false, unique = true)
 	private String username;
@@ -31,8 +32,11 @@ public class Employee {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private Role role;
-
-	@ManyToOne
-	@JoinColumn(name = "center_id", nullable = false)
+	// optional true redundant ama dursun
+	@ManyToOne(optional = true)
+	@JoinColumn(name = "center_id")
 	private Center center;
+	@ManyToOne(optional = true)
+	@JoinColumn(name = "branch_id")
+	private Branch branch;
 }

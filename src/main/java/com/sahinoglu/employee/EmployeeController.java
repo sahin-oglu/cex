@@ -2,7 +2,6 @@ package com.sahinoglu.employee;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,22 +9,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/v1")
 public class EmployeeController {
 
-	@Autowired
-	private EmployeeService service;
+	private final EmployeeService service;
 
-	@GetMapping("/employees")
-	public List<CreateEmployeeRequest> getEmployeeList() {
-		return service.getEmployeeList();
+	@GetMapping("/admin/employees")
+	public List<EmployeeResponse> getList() {
+		return service.list();
 	}
 
-	@PostMapping("/create")
-	public CreateEmployeeResponse createEmployee(@Valid @RequestBody CreateEmployeeRequest request) {
-		return service.createEmployee(request);
+	@PostMapping("/admin/employees")
+	public EmployeeResponse create(@Valid @RequestBody EmployeeRequest request) {
+		return service.create(request);
 	}
 
 }

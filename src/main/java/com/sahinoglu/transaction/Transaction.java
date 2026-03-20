@@ -1,32 +1,34 @@
-package com.sahinoglu.branch;
+package com.sahinoglu.transaction;
 
-import com.sahinoglu.center.Center;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import com.sahinoglu.wallet.Wallet;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
-@Table(name = "branches")
+@Table(name = "transactions")
 @Data
-public class Branch {
+public class Transaction {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	private String name;
-	private String location;
+	@ManyToOne
+	private Wallet fromWallet;
 
 	@ManyToOne
-	@JoinColumn(name = "center_id", nullable = false)
-	private Center center;
+	private Wallet toWallet;
 
-	private boolean active = true;
+	private BigDecimal amount;
 
+	private LocalDateTime executedAt;
 }

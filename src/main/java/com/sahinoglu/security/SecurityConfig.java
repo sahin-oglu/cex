@@ -1,12 +1,50 @@
-//package com.sahinoglu.security;
-//
-//import org.springframework.context.annotation.Bean;
-//import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-//import org.springframework.security.crypto.password.PasswordEncoder;
-//
-//public class SecurityConfig {
-//	@Bean
-//	public PasswordEncoder passwordEncoder() {
-//		return new BCryptPasswordEncoder();
-//	}
-//}
+package com.sahinoglu.security;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+@EnableMethodSecurity
+public class SecurityConfig {
+
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+		http.csrf(csrf -> csrf.disable()).authorizeHttpRequests(auth -> auth
+
+				// swagger'i whitelist'e almak gerekiyor..
+				.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+				
+				//
+				
+				.requestMatchers("/login").permitAll()
+
+				.requestMatchers("/api/v1/centers/**", "/api/v1/branches/**").authenticated()
+				//org_admin'in tum center'lar uzerinde otoritesi vardir.
+				.requestMatchers("/api/v1/admin/centers/**").hasRole("ORG_ADMIN")
+				.requestMatchers("/api/v1/admin/branches/**").hasAnyRole("ORG_ADMIN", "CENTER_ADMIN")
+				.requestMatchers("/api/v1/admin/employees/**").hasAnyRole("ORG_ADMIN", "CENTER_ADMIN")
+
+//				.requestMatchers("/admin/ui/**").authenticated()
+
+				.anyRequest().authenticated())
+
+				.formLogin(
+						login -> login.loginPage("/login").defaultSuccessUrl("/admin/ui/dashboard", true).permitAll())
+
+				.logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/login"));
+
+		return http.build();
+	}
+
+	@Bean
+	@SuppressWarnings("deprecation")
+	public static NoOpPasswordEncoder passwordEncoder() {
+		return (NoOpPasswordEncoder) NoOpPasswordEncoder.getInstance();
+	}
+}
