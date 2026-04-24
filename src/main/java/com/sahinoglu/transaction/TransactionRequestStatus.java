@@ -1,5 +1,5 @@
 package com.sahinoglu.transaction;
 
-public enum RequestStatus {
+public enum TransactionRequestStatus {
 	PENDING, APPROVED, REJECTED
 }

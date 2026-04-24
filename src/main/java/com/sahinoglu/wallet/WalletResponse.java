@@ -17,7 +17,6 @@ public class WalletResponse {
 
     private Long branchId;
 
-    private BigDecimal balance;
 
     private boolean active;
 }

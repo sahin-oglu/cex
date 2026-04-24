@@ -27,7 +27,7 @@ public class WalletService {
 
 	private WalletResponse mapToResponse(Wallet wallet) {
 		return new WalletResponse(wallet.getId(), wallet.getCustomer().getId(), wallet.getBranch().getId(),
-				wallet.getBalance(), wallet.isActive());
+				wallet.isActive());
 	}
 
 	private List<WalletResponse> mapList(List<Wallet> wallets) {
@@ -72,7 +72,7 @@ public class WalletService {
 
 		Wallet wallet = new Wallet();
 
-		wallet.setBalance(BigDecimal.ZERO);
+//		wallet.setBalance(BigDecimal.ZERO);
 
 		Customer customer = customerRepository.findById(request.getCustomerId())
 				.orElseThrow(() -> new RuntimeException("Customer not found"));

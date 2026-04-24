@@ -13,40 +13,40 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class WalletController {
 
-    private final WalletService service;
+	private final WalletService service;
 
-    @GetMapping("/wallets")
-    public List<WalletResponse> list(@RequestParam(name = "active", required = false) Boolean active) {
+	@GetMapping("/wallets")
+	public List<WalletResponse> list(@RequestParam(name = "active", required = false) Boolean active) {
 
-        if (active != null && active) {
-            return service.listActive();
-        }
+		if (active != null && active) {
+			return service.listActive();
+		}
 
-        return service.listAll();
-    }
+		return service.listAll();
+	}
 
-    @GetMapping("/wallets/customer/{customerId}")
-    public List<WalletResponse> listByCustomer(@PathVariable Long customerId) {
+	@GetMapping("/wallets/customer/{customerId}")
+	public List<WalletResponse> listByCustomer(@PathVariable Long customerId) {
 
-        return service.listByCustomer(customerId);
-    }
+		return service.listByCustomer(customerId);
+	}
 
-    @PostMapping("/admin/wallets")
-    @ResponseStatus(HttpStatus.CREATED)
-    public WalletResponse create(@Valid @RequestBody WalletRequest request) {
+	@PostMapping("/admin/wallets")
+	@ResponseStatus(HttpStatus.CREATED)
+	public WalletResponse create(@Valid @RequestBody WalletRequest request) {
 
-        return service.create(request);
-    }
+		return service.create(request);
+	}
 
-    @PatchMapping("/admin/wallets/{id}/deactivate")
-    public WalletResponse deactivate(@PathVariable Long id) {
+	@PatchMapping("/admin/wallets/{id}/deactivate")
+	public WalletResponse deactivate(@PathVariable Long id) {
 
-        return service.deactivate(id);
-    }
+		return service.deactivate(id);
+	}
 
-    @PatchMapping("/admin/wallets/{id}/reactivate")
-    public WalletResponse reactivate(@PathVariable Long id) {
+	@PatchMapping("/admin/wallets/{id}/reactivate")
+	public WalletResponse reactivate(@PathVariable Long id) {
 
-        return service.reactivate(id);
-    }
+		return service.reactivate(id);
+	}
 }

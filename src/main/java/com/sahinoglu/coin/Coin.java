@@ -1,24 +1,29 @@
 package com.sahinoglu.coin;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import lombok.Data;
 
 @Entity
-@Table(name = "coins")
+@Data
 public class Coin {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	private String id; // "bitcoin", "ethereum"
+	@Column(nullable = false)
+	private String symbol; // "BTC", "ETH"
+	@Column(nullable = false)
 
-	@Column(unique = true)
-	private String symbol;
+	private String name; // "Bitcoin", "Ethereum"
+	@Column(nullable = false, precision = 19, scale = 8)
 
-	private String name;
+	private BigDecimal price;
 
-	private boolean active = true;
+	private BigDecimal marketCap; // belki ileride frontend'de coin list sayfasi olursa diye..
+
+	private LocalDateTime lastUpdated; // bu service'de halledilecek..
 }
