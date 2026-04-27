@@ -11,6 +11,9 @@ import com.sahinoglu.center.Center;
 import com.sahinoglu.center.CenterRepository;
 import com.sahinoglu.employee.Employee;
 import com.sahinoglu.employee.Role;
+import com.sahinoglu.exception.BusinessException;
+import com.sahinoglu.exception.ForbiddenException;
+import com.sahinoglu.exception.NotFoundException;
 import com.sahinoglu.security.SecurityUtils;
 
 @Service
@@ -45,14 +48,14 @@ public class BranchService {
 	public BranchResponse create(BranchRequest request) {
 
 		Center center = centerRepository.findById(request.getCenterId())
-				.orElseThrow(() -> new RuntimeException("Center not found"));
+				.orElseThrow(() -> new NotFoundException("Center not found"));
 
 		if (!center.isActive()) {
-			throw new RuntimeException("Cannot create a branch under inactive center");
+			throw new BusinessException("Cannot create a branch under inactive center");
 		}
 
 		if (repository.existsByNameAndCenterId(request.getName(), request.getCenterId())) {
-			throw new RuntimeException("Branch name already exists in this center");
+			throw new BusinessException("Branch name already exists in this center");
 		}
 
 		Branch branch = new Branch();
@@ -68,10 +71,10 @@ public class BranchService {
 	@Transactional
 	public BranchResponse deactivate(Long branchId) {
 
-		Branch branch = repository.findById(branchId).orElseThrow(() -> new RuntimeException("Branch not found"));
+		Branch branch = repository.findById(branchId).orElseThrow(() -> new NotFoundException("Branch not found"));
 
 		if (!branch.isActive()) {
-			throw new RuntimeException("Branch already inactive");
+			throw new BusinessException("Branch already inactive");
 		}
 
 		branch.setActive(false);
@@ -81,14 +84,14 @@ public class BranchService {
 
 	@Transactional
 	public BranchResponse reactivate(Long branchId) {
-		Branch branch = repository.findById(branchId).orElseThrow(() -> new RuntimeException("Branch not found"));
+		Branch branch = repository.findById(branchId).orElseThrow(() -> new NotFoundException("Branch not found"));
 
 		if (!branch.getCenter().isActive()) {
-			throw new RuntimeException("Center inactive");
+			throw new BusinessException("Center inactive");
 		}
 
 		if (branch.isActive()) {
-			throw new RuntimeException("Branch already active");
+			throw new BusinessException("Branch already active");
 		}
 
 		branch.setActive(true);
@@ -144,7 +147,7 @@ public class BranchService {
 			Long centerId = SecurityUtils.getCurrentCenterId();
 
 			if (centerId == null) {
-				throw new RuntimeException("Center not found in session");
+				throw new ForbiddenException("Current user is not assigned to a center");
 			}
 
 			branches = repository.findListByCenterId(centerId);
@@ -154,14 +157,14 @@ public class BranchService {
 			Long branchId = SecurityUtils.getCurrentBranchId();
 
 			if (branchId == null) {
-				throw new RuntimeException("Branch not found in session");
+				throw new ForbiddenException("Current user is not assigned to a branch");
 			}
 
 			branches = List
-					.of(repository.findById(branchId).orElseThrow(() -> new RuntimeException("Branch not found")));
+					.of(repository.findById(branchId).orElseThrow(() -> new NotFoundException("Branch not found")));
 
 		} else {
-			throw new RuntimeException("Unauthorized");
+			throw new ForbiddenException("Unauthorized");
 		}
 
 		return mapList(branches);

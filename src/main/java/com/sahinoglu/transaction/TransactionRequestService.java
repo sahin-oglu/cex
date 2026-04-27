@@ -9,11 +9,13 @@ import com.sahinoglu.coin.Coin;
 import com.sahinoglu.coin.CoinRepository;
 import com.sahinoglu.employee.Employee;
 import com.sahinoglu.employee.Role;
+import com.sahinoglu.exception.BusinessException;
+import com.sahinoglu.exception.NotFoundException;
 import com.sahinoglu.security.SecurityUtils;
 import com.sahinoglu.wallet.Wallet;
-import com.sahinoglu.wallet.WalletAsset;
-import com.sahinoglu.wallet.WalletAssetRepository;
 import com.sahinoglu.wallet.WalletRepository;
+import com.sahinoglu.wallet.asset.WalletAsset;
+import com.sahinoglu.wallet.asset.WalletAssetRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -51,14 +53,14 @@ public class TransactionRequestService {
 		validateRequestBasics(request, current);
 
 		Wallet fromWallet = walletRepository.findById(request.getFromWalletId())
-				.orElseThrow(() -> new RuntimeException("From wallet not found"));
+				.orElseThrow(() -> new NotFoundException("From wallet not found"));
 
 		Wallet toWallet = walletRepository.findById(request.getToWalletId())
-				.orElseThrow(() -> new RuntimeException("To wallet not found"));
+				.orElseThrow(() -> new NotFoundException("To wallet not found"));
 
 		Coin coin = coinRepository.findById(request.getCoinId())
-				.orElseThrow(() -> new RuntimeException("Coin not found"));
-
+				.orElseThrow(() -> new NotFoundException("Coin not found"));
+		validateWalletsAreUsable(fromWallet, toWallet);
 		validateScope(current, fromWallet);
 		validateBalance(fromWallet, coin, request.getAmount());
 
@@ -95,7 +97,7 @@ public class TransactionRequestService {
 		validateApprovalRole(current);
 
 		TransactionRequest tr = requestRepository.findById(requestId)
-				.orElseThrow(() -> new RuntimeException("Request not found"));
+				.orElseThrow(() -> new NotFoundException("Request not found"));
 
 		validatePending(tr);
 		validateApprovalScope(current, tr);
@@ -105,44 +107,23 @@ public class TransactionRequestService {
 		Coin coin = tr.getCoin();
 		BigDecimal amount = tr.getAmount();
 
-		WalletAsset fromAsset = walletAssetRepository.findByWalletAndCoin(fromWallet, coin)
-				.orElseThrow(() -> new RuntimeException("No asset for this coin"));
+		validateWalletsAreUsable(fromWallet, toWallet);
+		validateCoinPriceAvailable(coin);
 
-		if (fromAsset.getAmount().compareTo(amount) < 0) {
-			throw new RuntimeException("Insufficient balance");
-		}
+		WalletAsset fromAsset = debitFromWallet(fromWallet, coin, amount);
+		WalletAsset toAsset = creditToWallet(toWallet, coin, amount);
 
-		fromAsset.setAmount(fromAsset.getAmount().subtract(amount));
-
-		WalletAsset toAsset = walletAssetRepository.findByWalletAndCoin(toWallet, coin).orElse(null);
-
-		if (toAsset == null) {
-			toAsset = new WalletAsset();
-			toAsset.setWallet(toWallet);
-			toAsset.setCoin(coin);
-			toAsset.setAmount(BigDecimal.ZERO);
-		}
-
-		toAsset.setAmount(toAsset.getAmount().add(amount));
-
+		walletAssetRepository.save(fromAsset);
 		walletAssetRepository.save(toAsset);
 
-		Transaction tx = new Transaction();
+		LocalDateTime now = LocalDateTime.now();
 
-		tx.setFromWallet(fromWallet);
-		tx.setToWallet(toWallet);
-		tx.setCoin(coin);
-		tx.setAmount(amount);
-		tx.setExecutedAt(LocalDateTime.now());
-		tx.setRequest(tr);
-
-		tx.setPriceAtExecution(coin.getPrice());
-
+		Transaction tx = buildTransaction(tr, fromWallet, toWallet, coin, amount, now);
 		transactionRepository.save(tx);
 
 		tr.setStatus(TransactionRequestStatus.APPROVED);
 		tr.setReviewedBy(current);
-		tr.setReviewedAt(LocalDateTime.now());
+		tr.setReviewedAt(now);
 
 		return mapToResponse(tr);
 	}
@@ -155,7 +136,7 @@ public class TransactionRequestService {
 		validateApprovalRole(current);
 
 		TransactionRequest tr = requestRepository.findById(requestId)
-				.orElseThrow(() -> new RuntimeException("Request not found"));
+				.orElseThrow(() -> new NotFoundException("Request not found"));
 
 		validatePending(tr);
 		validateApprovalScope(current, tr);
@@ -170,14 +151,14 @@ public class TransactionRequestService {
 	private void validateApprovalRole(Employee current) {
 
 		if (current.getRole() != Role.CENTER_OPERATOR) {
-			throw new RuntimeException("Only a center operator can approve");
+			throw new BusinessException("Only a center operator can approve");
 		}
 	}
 
 	private void validatePending(TransactionRequest tr) {
 
 		if (tr.getStatus() != TransactionRequestStatus.PENDING) {
-			throw new RuntimeException("Request already processed");
+			throw new BusinessException("Request already processed");
 		}
 	}
 
@@ -186,11 +167,11 @@ public class TransactionRequestService {
 		Long centerId = SecurityUtils.getCurrentCenterId();
 
 		if (centerId == null) {
-			throw new RuntimeException("Center not found in session");
+			throw new NotFoundException("Center not found in session");
 		}
 
 		if (!tr.getFromWallet().getBranch().getCenter().getId().equals(centerId)) {
-			throw new RuntimeException("Cannot approve request from another center");
+			throw new BusinessException("Cannot approve request from another center");
 		}
 	}
 
@@ -199,41 +180,118 @@ public class TransactionRequestService {
 		Long currentBranchId = SecurityUtils.getCurrentBranchId();
 
 		if (currentBranchId == null) {
-			throw new RuntimeException("Branch not found in session");
+			throw new NotFoundException("Branch not found in session");
 		}
 
 		if (!fromWallet.getBranch().getId().equals(currentBranchId)) {
-			throw new RuntimeException("Cannot use wallet from another branch");
+			throw new BusinessException("Cannot use wallet from another branch");
 		}
 	}
 
 	private void validateBalance(Wallet fromWallet, Coin coin, BigDecimal amount) {
 
 		WalletAsset asset = walletAssetRepository.findByWalletAndCoin(fromWallet, coin)
-				.orElseThrow(() -> new RuntimeException("No asset for this coin"));
+				.orElseThrow(() -> new NotFoundException("No asset for this coin"));
 
 		if (asset.getAmount().compareTo(amount) < 0) {
-			throw new RuntimeException("Insufficient balance");
+			throw new BusinessException("Insufficient balance for selected asset");
 		}
 	}
 
 	private void validateRequestBasics(TransactionRequestRequest request, Employee current) {
-
-		if (current.getRole() != Role.BRANCH_OPERATOR) {
-			throw new RuntimeException("Only branch operator can create transaction request");
-		}
-
-		if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-			throw new RuntimeException("Amount must be greater than zero");
+		if (request.getFromWalletId() == null || request.getToWalletId() == null) {
+			throw new BusinessException("Wallet ids are required");
 		}
 
 		if (request.getFromWalletId().equals(request.getToWalletId())) {
-			throw new RuntimeException("Cannot transfer to same wallet");
+			throw new BusinessException("Cannot transfer to same wallet");
+		}
+		if (current.getRole() != Role.BRANCH_OPERATOR) {
+			throw new BusinessException("Only branch operator can create transaction request");
+		}
+
+		if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+			throw new BusinessException("Amount must be greater than zero");
+		}
+
+		if (request.getFromWalletId().equals(request.getToWalletId())) {
+			throw new BusinessException("Cannot transfer to same wallet");
 		}
 
 		if (request.getCoinId() == null) {
-			throw new RuntimeException("Coin is required");
+			throw new BusinessException("Coin is required");
 		}
+	}
+
+	private void validateWalletsAreUsable(Wallet fromWallet, Wallet toWallet) {
+
+		if (!fromWallet.isActive()) {
+			throw new BusinessException("From wallet is inactive");
+		}
+
+		if (!toWallet.isActive()) {
+			throw new BusinessException("To wallet is inactive");
+		}
+
+		if (!fromWallet.getBranch().isActive() || !fromWallet.getBranch().getCenter().isActive()) {
+			throw new BusinessException("From wallet branch or center is inactive");
+		}
+
+		if (!toWallet.getBranch().isActive() || !toWallet.getBranch().getCenter().isActive()) {
+			throw new BusinessException("To wallet branch or center is inactive");
+		}
+	}
+
+	private void validateCoinPriceAvailable(Coin coin) {
+		if (coin.getPrice() == null) {
+			throw new BusinessException("Coin price is not available");
+		}
+	}
+
+	private WalletAsset debitFromWallet(Wallet fromWallet, Coin coin, BigDecimal amount) {
+
+		WalletAsset fromAsset = walletAssetRepository.findByWalletAndCoin(fromWallet, coin)
+				.orElseThrow(() -> new BusinessException("No asset for this coin"));
+
+		if (fromAsset.getAmount().compareTo(amount) < 0) {
+			throw new BusinessException("Insufficient balance");
+		}
+
+		fromAsset.setAmount(fromAsset.getAmount().subtract(amount));
+
+		return fromAsset;
+	}
+
+	private WalletAsset creditToWallet(Wallet toWallet, Coin coin, BigDecimal amount) {
+
+		WalletAsset toAsset = walletAssetRepository.findByWalletAndCoin(toWallet, coin).orElse(null);
+
+		if (toAsset == null) {
+			toAsset = new WalletAsset();
+			toAsset.setWallet(toWallet);
+			toAsset.setCoin(coin);
+			toAsset.setAmount(BigDecimal.ZERO);
+		}
+
+		toAsset.setAmount(toAsset.getAmount().add(amount));
+
+		return toAsset;
+	}
+
+	private Transaction buildTransaction(TransactionRequest request, Wallet fromWallet, Wallet toWallet, Coin coin,
+			BigDecimal amount, LocalDateTime executedAt) {
+
+		Transaction tx = new Transaction();
+
+		tx.setFromWallet(fromWallet);
+		tx.setToWallet(toWallet);
+		tx.setCoin(coin);
+		tx.setAmount(amount);
+		tx.setExecutedAt(executedAt);
+		tx.setRequest(request);
+		tx.setPriceAtExecution(coin.getPrice());
+
+		return tx;
 	}
 
 }

@@ -1,6 +1,5 @@
 package com.sahinoglu.wallet;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,21 +8,29 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sahinoglu.branch.Branch;
 import com.sahinoglu.branch.BranchRepository;
+import com.sahinoglu.coin.CoinRepository;
 import com.sahinoglu.customer.Customer;
 import com.sahinoglu.customer.CustomerRepository;
 import com.sahinoglu.employee.Employee;
 import com.sahinoglu.employee.Role;
+import com.sahinoglu.exception.BusinessException;
+import com.sahinoglu.exception.ForbiddenException;
+import com.sahinoglu.exception.NotFoundException;
 import com.sahinoglu.security.SecurityUtils;
+import com.sahinoglu.wallet.asset.WalletAssetRepository;
+import com.sahinoglu.wallet.asset.WalletAssetService;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+
 public class WalletService {
 
 	private final WalletRepository repository;
 	private final CustomerRepository customerRepository;
 	private final BranchRepository branchRepository;
+	private final WalletAssetService walletAssetService;
 
 	private WalletResponse mapToResponse(Wallet wallet) {
 		return new WalletResponse(wallet.getId(), wallet.getCustomer().getId(), wallet.getBranch().getId(),
@@ -68,22 +75,18 @@ public class WalletService {
 
 	public WalletResponse create(WalletRequest request) {
 
-		validate(request);
-
-		Wallet wallet = new Wallet();
-
-//		wallet.setBalance(BigDecimal.ZERO);
+		Branch branch = validate(request);
 
 		Customer customer = customerRepository.findById(request.getCustomerId())
-				.orElseThrow(() -> new RuntimeException("Customer not found"));
+				.orElseThrow(() -> new NotFoundException("Customer not found"));
 
-		Branch branch = branchRepository.findById(request.getBranchId())
-				.orElseThrow(() -> new RuntimeException("Branch not found"));
-
+		Wallet wallet = new Wallet();
 		wallet.setCustomer(customer);
 		wallet.setBranch(branch);
 
 		Wallet saved = repository.save(wallet);
+
+		walletAssetService.seedWalletAssets(saved);
 
 		return mapToResponse(saved);
 	}
@@ -127,7 +130,7 @@ public class WalletService {
 			Long centerId = SecurityUtils.getCurrentCenterId();
 
 			if (centerId == null) {
-				throw new RuntimeException("Center not found in session");
+				throw new NotFoundException("Center not found in session");
 			}
 
 			wallets = repository.findByBranchCenterId(centerId);
@@ -137,13 +140,13 @@ public class WalletService {
 			Long branchId = SecurityUtils.getCurrentBranchId();
 
 			if (branchId == null) {
-				throw new RuntimeException("Branch not found in session");
+				throw new NotFoundException("Branch not found in session");
 			}
 
 			wallets = repository.findByBranchId(branchId);
 
 		} else {
-			throw new RuntimeException("Unauthorized");
+			throw new ForbiddenException("Unauthorized");
 		}
 
 		return mapList(wallets);
@@ -164,10 +167,10 @@ public class WalletService {
 	@Transactional
 	public WalletResponse deactivate(Long walletId) {
 
-		Wallet wallet = repository.findById(walletId).orElseThrow(() -> new RuntimeException("Wallet not found"));
+		Wallet wallet = repository.findById(walletId).orElseThrow(() -> new NotFoundException("Wallet not found"));
 
 		if (!wallet.isActive()) {
-			throw new RuntimeException("Wallet already inactive");
+			throw new BusinessException("Wallet already inactive");
 		}
 
 		wallet.setActive(false);
@@ -178,18 +181,18 @@ public class WalletService {
 	@Transactional
 	public WalletResponse reactivate(Long walletId) {
 
-		Wallet wallet = repository.findById(walletId).orElseThrow(() -> new RuntimeException("Wallet not found"));
+		Wallet wallet = repository.findById(walletId).orElseThrow(() -> new NotFoundException("Wallet not found"));
 
 		if (wallet.isActive()) {
-			throw new RuntimeException("Wallet already active");
+			throw new BusinessException("Wallet already active");
 		}
 
 		if (!wallet.getBranch().isActive()) {
-			throw new RuntimeException("Branch inactive");
+			throw new BusinessException("Branch inactive");
 		}
 
 		if (!wallet.getBranch().getCenter().isActive()) {
-			throw new RuntimeException("Center inactive");
+			throw new BusinessException("Center inactive");
 		}
 
 		wallet.setActive(true);
@@ -197,26 +200,38 @@ public class WalletService {
 		return mapToResponse(wallet);
 	}
 
-	private void validate(WalletRequest request) {
+	private Branch validate(WalletRequest request) {
 
-		validateBranchExists(request.getBranchId());
+		Branch branch = branchRepository.findById(request.getBranchId())
+				.orElseThrow(() -> new NotFoundException("Branch not found"));
 
-		validateScope(request.getBranchId());
+		validateScope(branch);
+		validateBranchUsable(branch);
 
+		return branch;
 	}
 
 	private void validateBranchExists(Long branchId) {
 
 		if (!branchRepository.existsById(branchId)) {
-			throw new RuntimeException("Branch not found");
+			throw new NotFoundException("Branch not found");
 		}
 	}
 
-	private void validateScope(Long branchId) {
+	private void validateBranchUsable(Branch branch) {
+
+		if (!branch.isActive()) {
+			throw new BusinessException("Branch is inactive");
+		}
+
+		if (!branch.getCenter().isActive()) {
+			throw new BusinessException("Center is inactive");
+		}
+	}
+
+	private void validateScope(Branch branch) {
 
 		Employee current = SecurityUtils.getCurrentEmployee();
-
-		Branch branch = branchRepository.findById(branchId).orElseThrow(() -> new RuntimeException("Branch not found"));
 
 		if (current.getRole() == Role.ORG_ADMIN) {
 			return;
@@ -226,18 +241,64 @@ public class WalletService {
 
 			Long centerId = SecurityUtils.getCurrentCenterId();
 
-			if (!branch.getCenter().getId().equals(centerId)) {
-				throw new RuntimeException("Cannot create wallet for another center");
+			if (centerId == null) {
+				throw new NotFoundException("Center not found in session");
 			}
+
+			if (!branch.getCenter().getId().equals(centerId)) {
+				throw new BusinessException("Cannot create wallet for another center");
+			}
+
+			return;
 		}
 
 		if (current.getRole() == Role.BRANCH_ADMIN || current.getRole() == Role.BRANCH_OPERATOR) {
 
 			Long currentBranchId = SecurityUtils.getCurrentBranchId();
 
-			if (!branch.getId().equals(currentBranchId)) {
-				throw new RuntimeException("Cannot create wallet for another branch");
+			if (currentBranchId == null) {
+				throw new NotFoundException("Branch not found in session");
 			}
+
+			if (!branch.getId().equals(currentBranchId)) {
+				throw new BusinessException("Cannot create wallet for another branch");
+			}
+
+			return;
 		}
+
+		throw new ForbiddenException("Unauthorized");
 	}
+	// bunu asset service'e tasidim.
+//	private void validateWalletScope(Wallet wallet) {
+//
+//		Employee current = SecurityUtils.getCurrentEmployee();
+//
+//		if (current.getRole() == Role.ORG_ADMIN) {
+//			return;
+//		}
+//
+//		if (current.getRole() == Role.CENTER_ADMIN || current.getRole() == Role.CENTER_OPERATOR) {
+//			Long centerId = SecurityUtils.getCurrentCenterId();
+//
+//			if (!wallet.getBranch().getCenter().getId().equals(centerId)) {
+//				throw new RuntimeException("Cannot access wallet from another center");
+//			}
+//
+//			return;
+//		}
+//
+//		if (current.getRole() == Role.BRANCH_ADMIN || current.getRole() == Role.BRANCH_OPERATOR) {
+//			Long branchId = SecurityUtils.getCurrentBranchId();
+//
+//			if (!wallet.getBranch().getId().equals(branchId)) {
+//				throw new RuntimeException("Cannot access wallet from another branch");
+//			}
+//
+//			return;
+//		}
+//
+//		throw new RuntimeException("Unauthorized");
+//	}
+
 }

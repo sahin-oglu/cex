@@ -1,8 +1,9 @@
-package com.sahinoglu.wallet;
+package com.sahinoglu.wallet.asset;
 
 import java.math.BigDecimal;
 
 import com.sahinoglu.coin.Coin;
+import com.sahinoglu.wallet.Wallet;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

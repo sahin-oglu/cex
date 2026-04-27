@@ -34,4 +34,8 @@ public class CoinService {
 			coinRepository.save(coin);
 		}
 	}
+
+	public List<Coin> listCoins() {
+		return coinRepository.findAll();
+	}
 }

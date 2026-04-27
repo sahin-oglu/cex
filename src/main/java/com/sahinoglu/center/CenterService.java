@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 
 import com.sahinoglu.employee.Employee;
 import com.sahinoglu.employee.Role;
+import com.sahinoglu.exception.BusinessException;
+import com.sahinoglu.exception.ForbiddenException;
+import com.sahinoglu.exception.NotFoundException;
 import com.sahinoglu.security.SecurityUtils;
 
 //import com.sahinoglu.center.CenterRequest;
@@ -45,7 +48,7 @@ public class CenterService {
 	public CenterResponse create(CenterRequest request) {
 
 		if (repository.existsByName(request.getName())) {
-			throw new RuntimeException("Center already exists");
+			throw new BusinessException("Center already exists");
 		}
 
 		Center center = new Center();
@@ -92,25 +95,25 @@ public class CenterService {
 			Long centerId = SecurityUtils.getCurrentCenterId();
 
 			if (centerId == null) {
-				throw new RuntimeException("Center not found in session");
+				throw new ForbiddenException("Current user is not assigned to a center");
 			}
 
 			centers = List
-					.of(repository.findById(centerId).orElseThrow(() -> new RuntimeException("Center not found")));
+					.of(repository.findById(centerId).orElseThrow(() -> new NotFoundException("Center not found")));
 
 		} else if (current.getRole() == Role.BRANCH_ADMIN || current.getRole() == Role.BRANCH_OPERATOR) {
 
 			Long centerId = SecurityUtils.getCurrentCenterId();
 
 			if (centerId == null) {
-				throw new RuntimeException("Center not found in session");
+				throw new ForbiddenException("Current user is not assigned to a center");
 			}
 
 			centers = List
-					.of(repository.findById(centerId).orElseThrow(() -> new RuntimeException("Center not found")));
+					.of(repository.findById(centerId).orElseThrow(() -> new NotFoundException("Center not found")));
 
 		} else {
-			throw new RuntimeException("Unauthorized");
+			throw new ForbiddenException("Unauthorized");
 		}
 
 		return mapList(centers);
@@ -119,10 +122,10 @@ public class CenterService {
 	@Transactional
 	public CenterResponse deactivate(Long centerId) {
 
-		Center center = repository.findById(centerId).orElseThrow(() -> new RuntimeException("Center not found"));
+		Center center = repository.findById(centerId).orElseThrow(() -> new NotFoundException("Center not found"));
 
 		if (!center.isActive()) {
-			throw new RuntimeException("Center already inactive");
+			throw new BusinessException("Center already inactive");
 		}
 
 		center.setActive(false);
@@ -136,10 +139,10 @@ public class CenterService {
 	@Transactional
 	public CenterResponse reactivate(Long id) {
 
-		Center center = repository.findById(id).orElseThrow(() -> new RuntimeException("Center not found"));
+		Center center = repository.findById(id).orElseThrow(() -> new NotFoundException("Center not found"));
 
 		if (center.isActive()) {
-			throw new RuntimeException("Center already active");
+			throw new BusinessException("Center already active");
 		}
 
 		center.setActive(true);

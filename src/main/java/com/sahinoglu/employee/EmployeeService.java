@@ -11,6 +11,9 @@ import com.sahinoglu.branch.Branch;
 import com.sahinoglu.branch.BranchRepository;
 import com.sahinoglu.center.Center;
 import com.sahinoglu.center.CenterRepository;
+import com.sahinoglu.exception.BusinessException;
+import com.sahinoglu.exception.ForbiddenException;
+import com.sahinoglu.exception.NotFoundException;
 import com.sahinoglu.security.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -88,13 +91,13 @@ public class EmployeeService {
 
 		if (request.getCenterId() != null) {
 			Center center = centerRepository.findById(request.getCenterId())
-					.orElseThrow(() -> new RuntimeException("Center not found"));
+					.orElseThrow(() -> new NotFoundException("Center not found"));
 			employee.setCenter(center);
 		}
 
 		if (request.getBranchId() != null) {
 			Branch branch = branchRepository.findById(request.getBranchId())
-					.orElseThrow(() -> new RuntimeException("Branch not found"));
+					.orElseThrow(() -> new NotFoundException("Branch not found"));
 			employee.setBranch(branch);
 		}
 
@@ -158,7 +161,7 @@ public class EmployeeService {
 			Long centerId = SecurityUtils.getCurrentCenterId();
 
 			if (centerId == null) {
-				throw new RuntimeException("Center not found in session");
+				throw new NotFoundException("Center not found in session");
 			}
 
 			employees = repository.findByCenterId(centerId);
@@ -168,13 +171,13 @@ public class EmployeeService {
 			Long branchId = SecurityUtils.getCurrentBranchId();
 
 			if (branchId == null) {
-				throw new RuntimeException("Branch not found in session");
+				throw new NotFoundException("Branch not found in session");
 			}
 
 			employees = repository.findByBranchId(branchId);
 
 		} else {
-			throw new RuntimeException("Unauthorized");
+			throw new ForbiddenException("Unauthorized");
 		}
 
 		return mapList(employees);
@@ -203,29 +206,29 @@ public class EmployeeService {
 		case ORG_ADMIN -> {
 
 			if (centerId != null || branchId != null) {
-				throw new RuntimeException("ORG_ADMIN cannot belong to center or branch");
+				throw new BusinessException("ORG_ADMIN cannot belong to center or branch");
 			}
 		}
 
 		case CENTER_ADMIN, CENTER_OPERATOR -> {
 
 			if (centerId == null) {
-				throw new RuntimeException(role + " must belong to a center");
+				throw new BusinessException(role + " must belong to a center");
 			}
 
 			if (branchId != null) {
-				throw new RuntimeException(role + " cannot belong to a branch");
+				throw new BusinessException(role + " cannot belong to a branch");
 			}
 		}
 
 		case BRANCH_ADMIN, BRANCH_OPERATOR -> {
 
 			if (centerId == null) {
-				throw new RuntimeException(role + " must belong to a center");
+				throw new BusinessException(role + " must belong to a center");
 			}
 
 			if (branchId == null) {
-				throw new RuntimeException(role + " must belong to a branch");
+				throw new BusinessException(role + " must belong to a branch");
 			}
 		}
 		}
@@ -233,17 +236,17 @@ public class EmployeeService {
 
 	private void validateBranchCenterRelation(Long branchId, Long centerId) {
 
-		Branch branch = branchRepository.findById(branchId).orElseThrow(() -> new RuntimeException("Branch not found"));
+		Branch branch = branchRepository.findById(branchId).orElseThrow(() -> new NotFoundException("Branch not found"));
 
 		if (!branch.getCenter().getId().equals(centerId)) {
-			throw new RuntimeException("Branch does not belong to given center");
+			throw new BusinessException("Branch does not belong to given center");
 		}
 	}
 
 	private void validateUsernameUniqueness(String username) {
 
 		if (repository.existsByUsername(username)) {
-			throw new RuntimeException("Username already exists");
+			throw new BusinessException("Username already exists");
 		}
 	}
 
