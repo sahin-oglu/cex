@@ -9,10 +9,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sahinoglu.wallet.asset.WalletAssetConversionRequest;
+import com.sahinoglu.wallet.asset.WalletAssetConversionResponse;
+import com.sahinoglu.wallet.asset.WalletAssetOperationRequest;
 import com.sahinoglu.wallet.asset.WalletAssetResponse;
 import com.sahinoglu.wallet.asset.WalletAssetService;
 
@@ -28,13 +30,8 @@ public class WalletController {
 	private final WalletAssetService walletAssetService;
 
 	@GetMapping("/wallets")
-	public List<WalletResponse> list(@RequestParam(name = "active", required = false) Boolean active) {
-
-		if (active != null && active) {
-			return walletService.listActive();
-		}
-
-		return walletService.listAll();
+	public List<WalletResponse> list() {
+		return walletService.list();
 	}
 
 	@GetMapping("/wallets/customer/{customerId}")
@@ -47,6 +44,27 @@ public class WalletController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public WalletResponse create(@Valid @RequestBody WalletRequest request) {
 		return walletService.create(request);
+	}
+
+	@PostMapping("/wallets/{walletId}/convert")
+	public WalletAssetConversionResponse convert(@PathVariable Long walletId,
+			@Valid @RequestBody WalletAssetConversionRequest request) {
+
+		return walletAssetService.convert(walletId, request);
+	}
+
+	@PostMapping("/wallets/{walletId}/deposit")
+	public WalletAssetResponse depositUsdt(@PathVariable Long walletId,
+			@Valid @RequestBody WalletAssetOperationRequest request) {
+
+		return walletAssetService.depositUsdt(walletId, request);
+	}
+
+	@PostMapping("/wallets/{walletId}/withdraw")
+	public WalletAssetResponse withdrawUsdt(@PathVariable Long walletId,
+			@Valid @RequestBody WalletAssetOperationRequest request) {
+
+		return walletAssetService.withdrawUsdt(walletId, request);
 	}
 
 	@GetMapping("/wallets/{walletId}/assets")

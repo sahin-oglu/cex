@@ -23,6 +23,7 @@ public class TransactionRequestRequest {
 	private String coinId; // "bitcoin"
 
 	@NotNull
-	@Positive
+	//zaten service'de yapiyoruz bu isi
+//	@Positive 
 	private BigDecimal amount;
 }

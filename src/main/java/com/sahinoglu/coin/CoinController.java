@@ -21,7 +21,7 @@ public class CoinController {
 	}
 
 	@GetMapping("/coins")
-	public List<Coin> listCoins() {
-		return coinService.listCoins();
+	public List<Coin> list() {
+		return coinService.list();
 	}
 }

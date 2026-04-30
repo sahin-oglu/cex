@@ -10,17 +10,27 @@ import lombok.Data;
 @AllArgsConstructor
 public class TransactionResponse {
 
-    private Long id;
+	private Long id;
 
-    private Long fromWalletId;
-    private Long toWalletId;
+	private Long fromWalletId;
+	private Long toWalletId;
 
-    private String coinId;
-    private String coinSymbol;
+	private Long fromBranchId;
+	private Long toBranchId;
 
-    private BigDecimal amount;
+	private String coinId;
+	private String coinSymbol;
 
-    private BigDecimal priceAtExecution;
+	private BigDecimal amount;
+	private BigDecimal priceAtExecution;
 
-    private LocalDateTime executedAt;
+	private LocalDateTime executedAt;
+	private Long requestId;
+
+	private Long requestedById;
+	private String requestedByUsername;
+
+	private Long reviewedById;
+	private String reviewedByUsername;
+
 }

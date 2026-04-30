@@ -86,7 +86,7 @@ public class WalletService {
 
 		Wallet saved = repository.save(wallet);
 
-		walletAssetService.seedWalletAssets(saved);
+//		walletAssetService.seedWalletAssets(saved);
 
 		return mapToResponse(saved);
 	}

@@ -1,214 +1,454 @@
-# CEX - Banking / Crypto Backend System
+CEX Backend System
 
-## Overview
+1. Project Overview
 
-This project is a modular monolith backend system that simulates a banking + crypto transaction platform.
+This project is the backend of a role-based system that combines CLASSIC BANKING workflows and CRYPTO ASSET MANAGEMENT.
 
-The idea was to first build a **clean organizational structure** (centers, branches, employees) and only after that move into the more complex part: **transaction logic**.
+The system models a controlled environment where financial operations are not executed directly, but instead go through a structured process involving:
 
-Instead of jumping straight into “send money” type features, the goal here was to model something closer to real-world systems:
-- scoped access control
-- approval-based workflows
-- multi-asset wallets
+explicit business rules
+clearly defined roles
+strict access control rules for users
+approval-based transaction processes
 
----
+The primary goal of the project is not to build a production-ready exchange, but to DESIGN and IMPLEMENT a consistent domain model that reflects how such a system could behave under REAL-WORLD CONSTRAINTS.
 
-## Architecture
+Key capabilities of the system include:
+
+Organizational hierarchy management (Center->Branch->Employee)
+Customer and wallet management
+Multi-asset wallet structure (crypto-based)
+Deposit and withdrawal operations (USDT-based)
+Asset conversion with fee handling
+Transaction request and approval workflow
+Immutable transaction recording
+Role-based data scoping and authorization
+
+The project is implemented as a modular monolith, focusing on clarity of design rather than distribution complexity.
+
+2. Domain Model
 
 The system is divided into two main domains:
-Organization
-├── Center
-├── Branch
-└── Employee
 
-Banking
-├── Customer
-├── Wallet
-├── WalletAsset
-├── TransactionRequest
-└── Transaction
+Organization Domain
+Banking Domain
+Organization Domain
 
-This is a **feature-based package structure**, not a layered one.
+This domain defines the structure of the system and determines how access is scoped.
 
----
+Center
+ └── Branch
+      └── Employee
+A Center represents a high-level organizational unit.
+A Branch operates under a specific center.
+An Employee belongs either to a center or a branch depending on their role.
 
-## Core Concepts
+This hierarchy is critical because all access control decisions are derived from it.
 
-### Role vs Scope
+Banking Domain
 
-One of the main design decisions in this project is separating:
+This domain handles financial entities and operations.
 
-- **Role → what you can do**
-- **Scope → where you can do it**
+Customer
+ └── Wallet
+      └── WalletAsset (Coin + Amount)
+A Customer is a global entity and is not directly tied to a branch.
+A Wallet belongs to a specific branch.
+A WalletAsset represents a specific coin balance within a wallet.
 
-Examples:
+Instead of storing a single balance, wallets maintain multiple assets, enabling:
 
-- `BRANCH_OPERATOR`
-  - can create transaction requests
-  - but only within their own branch
+multi-currency support
+precise validation
+realistic crypto behavior
+Transaction Model
 
-- `CENTER_OPERATOR`
-  - can approve/reject requests
-  - but only within their own center
+The system does not allow direct transfers between wallets.
 
-- `ORG_ADMIN`
-  - has global access
+Instead, it enforces a two-step process:
 
-Authorization is handled in the **service layer**, not just in Spring Security config.
+TransactionRequest → (Approved) → Transaction
+A TransactionRequest represents an intention to transfer assets.
+A Transaction is created only after approval.
+Transactions are immutable once created.
 
----
+This design ensures:
 
-### Transaction Flow
+separation of duties
+auditability
+controlled execution of financial operations
+3. Roles and Responsibilities
+
+The system is strictly role-driven. Each role has clearly defined responsibilities and access boundaries.
+
+ORG_ADMIN
+Global authority within the system
+Responsible for system setup
+Can create:
+centers
+branches
+employees
+Has unrestricted access to all data
+CENTER_ADMIN
+Manages a specific center
+Can view and monitor:
+branches under the center
+employees within the center
+transactions and requests
+Does not perform operational actions
+CENTER_OPERATOR
+Responsible for approval of transaction requests
+Can:
+approve or reject requests
+Cannot create transactions directly
+Ensures separation between creation and approval
+BRANCH_ADMIN
+Supervises a branch
+Can view:
+wallets
+employees
+transaction requests
+transaction history
+Focused on monitoring rather than execution
+BRANCH_OPERATOR
+Handles day-to-day operations
+Can:
+create customers
+create wallets
+perform deposits and withdrawals (USDT)
+convert assets between coins
+create transaction requests
+
+This role is the main entry point for financial activity in the system.
+
+Core Principle
+Creation and approval must be separated
+Requests are created at the branch level
+Requests are approved at the center level
+
+This ensures that:
+
+no single role has full control over a transaction
+financial actions are auditable and controlled
+
+
+4. Requirements
+
+The system was designed based on a set of implicit requirements, similar to what would be expected in a real-world specification document.
+
+Instead of building features independently, the implementation followed a consistent set of assumptions about how such a system should behave.
+
+Functional Requirements
+A customer must be able to own one or more wallets
+A wallet must be able to hold multiple assets (different coins)
+The system must support deposit and withdrawal operations (USDT-based)
+Users must be able to convert assets between coins
+Asset conversion must apply a fixed fee
+A transfer between wallets must not be executed directly
+Every transfer must go through a request and approval process
+Approved requests must result in a transaction record
+The system must keep a history of all executed transactions
+Authorization Requirements
+All operations must be restricted based on role and scope
+A branch operator must only operate on wallets within their branch
+A center operator must only approve requests within their center
+Users must not access data outside their assigned scope
+Business Rules
+A transaction request must not be approved by its creator
+A transaction must not be executed if the source wallet lacks sufficient balance
+Wallet operations must fail if the wallet, branch, or center is inactive
+Coin prices must be available for conversion and transaction execution
+Asset balances must be updated consistently during every operation
+System Constraints
+Transactions must be immutable once created
+Wallet balances must not be stored as a single value
+All financial operations must be validated before execution
+5. Requirements-Driven Design
+
+Although no formal requirements document existed at the beginning, the system was intentionally designed as if such a document was guiding the implementation.
+
+This mindset influenced several key modeling decisions:
+
+Customers were modeled as global entities, instead of being tied to a branch
+Wallets were explicitly tied to branches to enforce operational responsibility
+Transaction execution was separated into request and approval phases to enforce control and auditability
+Asset-based accounting was chosen instead of a single balance field to support multi-asset behavior
+
+By treating the system as if it had predefined requirements, arbitrary decisions were avoided and the model remained consistent throughout development.
+
+6. Design Decisions
+
+This section explains the key design choices made during the implementation.
+
+Modular Monolith Architecture
+
+The project is implemented as a modular monolith.
+
+Instead of splitting the system into microservices prematurely, the focus was on:
+
+clear domain separation
+maintainable code structure
+simplified development and testing
+Explicit DTO Naming
+
+DTOs are intentionally named in a verbose way:
+
+TransactionRequestRequest
+TransactionRequestResponse
+
+This avoids ambiguity and makes the intent of each class explicit, even if it is not aesthetically minimal.
+
+Service Layer as the Source of Truth
+
+All business logic is implemented in the service layer.
+
+No validation or business rules are placed in controllers.
+
+This allows:
+
+centralized rule management
+easier testing
+consistent behavior across endpoints
+Validation Strategy
+
+Validation is split into two layers:
+
+DTO validation (@Valid) for input format
+Service-level validation for business rules
+
+This ensures that:
+
+invalid input is rejected early
+business constraints are enforced consistently
+WalletAsset Instead of Balance Field
+
+Instead of storing a single balance in the wallet:
+
+Wallet → multiple WalletAssets
+
+This decision enables:
+
+support for multiple coins
+more realistic financial modeling
+fine-grained validation
+TransactionRequest and Transaction Separation
 
 Transactions are not created directly.
 
 Instead:
 
-1. A **Branch Operator** creates a `TransactionRequest` (PENDING)
-2. A **Center Operator** reviews it
-3. If approved:
-   - balances are updated
-   - a `Transaction` is created
-4. If rejected:
-   - nothing changes, just status update
+TransactionRequest → approval → Transaction
 
-This separation is intentional:
+This ensures:
 
-- `TransactionRequest` = intent (mutable)
-- `Transaction` = actual event (immutable)
+separation of duties
+auditability
+controlled execution
 
----
+Transactions are also immutable, meaning they are never updated after creation.
 
-### Wallet Model (Multi-Asset)
+Snapshotting User Information in Transactions
 
-At first, wallets had a simple `balance` field.
+Transaction entities store:
 
-That turned out to be wrong for a crypto-like system.
+requestedById / username
+reviewedById / username
 
-Instead, wallets are modeled like this:
-Wallet
-└── WalletAsset
-├── Coin
-└── amount
+instead of only referencing the Employee entity.
 
-Example:
+This acts as a snapshot, ensuring that historical records remain valid even if user data changes later.
 
-- BTC → 0.5
-- ETH → 1.2
+No Public Registration
 
-This avoids ambiguity like:
-> “0.5 of what?”
+The system does not support public user registration.
 
-Also prevents duplicate entries via a unique constraint:
-(wallet_id, coin_id)
+All employees are created by administrators.
 
----
+This reflects a controlled organizational environment rather than an open system.
 
-### Coin Model
+Scheduled Coin Synchronization
 
-Coins are stored in the system and can be synced from an external API (planned).
+Coin data is periodically updated using a scheduled task.
 
-Each coin includes:
+This ensures:
 
-- id (e.g. "bitcoin")
-- symbol (BTC, ETH)
-- price (used as snapshot reference)
-- market cap (optional)
+up-to-date pricing
+consistent conversion behavior
+Summary
+This project is not just an implementation of features,
+but an attempt to design a system based on consistent assumptions and rules.
 
-Important detail:
 
-> Transaction stores `priceAtExecution` to avoid future inconsistencies.
+7. API Overview
 
----
+Below is a high-level overview of the main API groups.
 
-## Business Rules
+Organization Management
+/api/v1/admin/centers
+/api/v1/admin/branches
+/api/v1/admin/employees
+Managed by ORG_ADMIN and CENTER_ADMIN
+Used to build and maintain the organizational hierarchy
+Customer and Wallet Management
+/api/v1/admin/customers
+/api/v1/admin/wallets
+/api/v1/wallets
+/api/v1/wallets/{walletId}/assets
+Customers are created by branch-level roles
+Wallets are assigned to branches
+Wallet assets can be viewed per wallet
+Wallet Operations
+POST /api/v1/wallets/{walletId}/deposit
+POST /api/v1/wallets/{walletId}/withdraw
+POST /api/v1/wallets/{walletId}/convert
+Performed by BRANCH_OPERATOR
+Deposit/withdraw operations are limited to USDT
+Conversion allows asset transformation between coins with a fixed fee
+Transaction Requests
+POST /api/v1/transaction-requests
+GET  /api/v1/transaction-requests
+POST /api/v1/transaction-requests/{id}/approve
+POST /api/v1/transaction-requests/{id}/reject
+Created by BRANCH_OPERATOR
+Approved or rejected by CENTER_OPERATOR
+Follows a strict approval workflow
+Transaction History
+GET /api/v1/admin/transactions
+Accessible by admin roles
+Returns immutable transaction records
+Scoped based on role (branch / center / global)
+Coin Data
+GET /api/v1/coins
+POST /api/v1/admin/coins/sync
+Coin data is fetched from an external API
+Prices are used for conversions and transaction execution
+8. Example Flow
 
-### Organization
+The following scenario demonstrates a typical end-to-end workflow:
 
-- A Branch must belong to a Center
-- Inactive structures should not be usable
+Step 1 — Setup (Admin)
+ORG_ADMIN creates:
+Center
+Branch
+Employees (Branch Operator & Center Operator)
+Step 2 — Customer & Wallet Creation
+Branch Operator:
+Creates a customer
+Creates a wallet for that customer
+Step 3 — Deposit
+Deposit 1000 USDT into wallet
+Wallet now holds:
+USDT = 1000
+Step 4 — Conversion
+Convert 1000 USDT → BTC
+Fee: 1% → 10 USDT
+Net: 990 USDT
+Conversion based on coin prices
 
----
+Result:
 
-### Employee
+USDT = 0
+BTC ≈ calculated amount
+Step 5 — Transaction Request
+Branch Operator creates a transfer request:
+From Wallet A → Wallet B
+Amount: BTC
+Status: PENDING
+Step 6 — Approval
+Center Operator reviews the request:
+Approve → Transaction is executed
+Reject  → Request is closed
+Step 7 — Transaction Execution
 
-- Branch roles must have a branch assigned
-- Center roles must not have a branch
-- Role defines authority, not scope
+If approved:
 
----
+Assets are transferred between wallets
+A Transaction record is created
+The transaction becomes immutable
+Step 8 — History
+Admin roles can view:
+Transaction history
+Transaction requests
+Wallet states
+Final Note
+This project focuses on modeling a controlled financial system
+where rules, roles, and workflows are more important than raw functionality.
 
-### Wallet
 
-- A wallet belongs to a Customer and a Branch
-- Wallets are multi-asset
-- A wallet cannot have duplicate assets for the same coin
+9. Possible Future Improvements
 
----
+While the current implementation focuses on core functionality and domain modeling, several improvements can be made to bring the system closer to a production-ready architecture.
 
-### Transactions
+Concurrency and Consistency
 
-- Transactions cannot be created directly
-- Only `BRANCH_OPERATOR` can create requests
-- Only `CENTER_OPERATOR` can approve/reject
-- A request must be `PENDING` to be processed
-- Balance must be sufficient at approval time
+The current implementation assumes single-threaded execution for critical financial operations.
 
----
+Future improvements may include:
 
-## API Overview (simplified)
-POST /api/v1/transactions/request
-→ create transaction request
+Optimistic locking (@Version) for wallet assets
+Pessimistic locking for critical transactions
+Protection against double-spend scenarios
+Pagination and Query Optimization
 
-POST /api/v1/transactions/{id}/approve
-→ approve request
+List endpoints currently return full datasets.
 
-POST /api/v1/transactions/{id}/reject
-→ reject request
+This can be improved by:
 
-GET /api/v1/transactions/wallet/{walletId}
-→ get transaction history
+Adding pagination support (page, size)
+Introducing sorting and filtering options
+Optimizing database queries for large datasets
+Integration Testing
 
----
+The system is currently tested manually via API calls.
 
-## Design Notes
+Future improvements:
 
-Some intentional decisions:
+End-to-end integration tests for critical flows
+Role-based scenario testing (branch → center → approval)
+Automated regression testing
+Audit and Logging
 
-- Modular monolith instead of microservices
-- Feature-based packaging
-- Manual mapping instead of heavy frameworks
-- Business logic inside services, not controllers
-- Approval-based flow instead of direct execution
+Although transactions are immutable, audit capabilities can be expanded:
 
-This project is more about **modeling real-world constraints correctly** than just building CRUD endpoints.
+Detailed audit logs for all operations
+Tracking changes in wallet assets
+Logging approval and rejection actions
+External System Integration
 
----
+The system currently uses a single external source for coin data.
 
-## Current Status
+Possible extensions:
 
-- Organization system → mostly complete
-- Security & scoped access → working
-- Wallet & asset model → implemented
-- Transaction request flow → implemented
-- Approval / reject → implemented
-- Transaction history → in progress
+Multiple price providers
+Fallback mechanisms in case of API failure
+Rate limiting and retry strategies
+Fee Management
 
----
+Conversion fees are currently fixed.
 
-## Future Improvements
+This could be improved by:
 
-- Real coin API integration
-- Exception handling layer
-- Pagination & filtering
-- Concurrency control (locking)
-- Better audit/logging
+Configurable fee rates
+Different fee policies per coin
+Fee tracking and reporting
+User Authentication Enhancements
 
----
+The current authentication model is basic.
 
-## Final Note
+Possible improvements:
 
-This project is mainly an attempt to understand:
-> how real financial systems structure their logic
+JWT-based authentication
+Token expiration and refresh mechanisms
+More granular permission management
+UI / Dashboard Layer
 
-Not just “how to send money from A to B”.
+The system currently exposes only backend APIs.
+
+A future improvement would be:
+
+A dashboard for branch and center admins
+Visualization of transactions, wallets, and activity
+Real-time operational insights
+Closing Thought
+This project establishes a solid foundation for a role-based financial system.
+Future improvements would focus on scalability, robustness, and operational visibility.

@@ -2,6 +2,7 @@ package com.sahinoglu.transaction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
@@ -10,6 +11,7 @@ import com.sahinoglu.coin.CoinRepository;
 import com.sahinoglu.employee.Employee;
 import com.sahinoglu.employee.Role;
 import com.sahinoglu.exception.BusinessException;
+import com.sahinoglu.exception.ForbiddenException;
 import com.sahinoglu.exception.NotFoundException;
 import com.sahinoglu.security.SecurityUtils;
 import com.sahinoglu.wallet.Wallet;
@@ -118,12 +120,12 @@ public class TransactionRequestService {
 
 		LocalDateTime now = LocalDateTime.now();
 
-		Transaction tx = buildTransaction(tr, fromWallet, toWallet, coin, amount, now);
-		transactionRepository.save(tx);
-
 		tr.setStatus(TransactionRequestStatus.APPROVED);
 		tr.setReviewedBy(current);
 		tr.setReviewedAt(now);
+
+		Transaction tx = buildTransaction(tr, fromWallet, toWallet, coin, amount, now);
+		transactionRepository.save(tx);
 
 		return mapToResponse(tr);
 	}
@@ -146,6 +148,47 @@ public class TransactionRequestService {
 		tr.setReviewedAt(LocalDateTime.now());
 
 		return mapToResponse(tr);
+	}
+
+	public List<TransactionRequestResponse> list() {
+
+		Employee current = SecurityUtils.getCurrentEmployee();
+
+		List<TransactionRequest> requests;
+
+		if (current.getRole() == Role.ORG_ADMIN) {
+
+			requests = requestRepository.findAll();
+
+		} else if (current.getRole() == Role.CENTER_ADMIN || current.getRole() == Role.CENTER_OPERATOR) {
+
+			Long centerId = SecurityUtils.getCurrentCenterId();
+
+			if (centerId == null) {
+				throw new ForbiddenException("Current user is not assigned to a center");
+			}
+
+			requests = requestRepository.findByFromWalletBranchCenterId(centerId);
+
+		} else if (current.getRole() == Role.BRANCH_ADMIN) {
+
+			Long branchId = SecurityUtils.getCurrentBranchId();
+
+			if (branchId == null) {
+				throw new ForbiddenException("Current user is not assigned to a branch");
+			}
+
+			requests = requestRepository.findByFromWalletBranchId(branchId);
+
+		} else if (current.getRole() == Role.BRANCH_OPERATOR) {
+
+			requests = requestRepository.findByRequestedById(current.getId());
+
+		} else {
+			throw new ForbiddenException("Unauthorized");
+		}
+
+		return requests.stream().map(this::mapToResponse).toList();
 	}
 
 	private void validateApprovalRole(Employee current) {
@@ -217,7 +260,7 @@ public class TransactionRequestService {
 		if (request.getFromWalletId().equals(request.getToWalletId())) {
 			throw new BusinessException("Cannot transfer to same wallet");
 		}
-
+		// bunu boyle yapinca ne fark ediyor bak
 		if (request.getCoinId() == null) {
 			throw new BusinessException("Coin is required");
 		}
@@ -281,17 +324,27 @@ public class TransactionRequestService {
 	private Transaction buildTransaction(TransactionRequest request, Wallet fromWallet, Wallet toWallet, Coin coin,
 			BigDecimal amount, LocalDateTime executedAt) {
 
-		Transaction tx = new Transaction();
+		Transaction transaction = new Transaction();
 
-		tx.setFromWallet(fromWallet);
-		tx.setToWallet(toWallet);
-		tx.setCoin(coin);
-		tx.setAmount(amount);
-		tx.setExecutedAt(executedAt);
-		tx.setRequest(request);
-		tx.setPriceAtExecution(coin.getPrice());
+		transaction.setFromWallet(fromWallet);
+		transaction.setToWallet(toWallet);
+		transaction.setCoin(coin);
 
-		return tx;
+		transaction.setAmount(amount);
+		transaction.setExecutedAt(executedAt);
+		transaction.setRequest(request);
+		transaction.setPriceAtExecution(coin.getPrice());
+
+		Employee requestedBy = request.getRequestedBy();
+		Employee reviewedBy = request.getReviewedBy();
+
+		transaction.setRequestedById(requestedBy.getId());
+		transaction.setRequestedByUsername(requestedBy.getUsername());
+
+		transaction.setReviewedById(reviewedBy.getId());
+		transaction.setReviewedByUsername(reviewedBy.getUsername());
+
+		return transaction;
 	}
 
 }

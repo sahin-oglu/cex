@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import com.sahinoglu.coin.Coin;
 import com.sahinoglu.wallet.Wallet;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -34,17 +35,26 @@ public class Transaction {
 
 	@ManyToOne(optional = false)
 	private Wallet fromWallet;
-
 	@ManyToOne(optional = false)
 	private Wallet toWallet;
+
 	@ManyToOne(optional = false)
 	private Coin coin;
+	@Column(precision = 19, scale = 8)
 	private BigDecimal priceAtExecution;
+
 	private BigDecimal amount;
-
 	private LocalDateTime executedAt;
-
 	@OneToOne
 	private TransactionRequest request;
+	
+	
+	private Long requestedById;
+	private String requestedByUsername;
+
+	private Long reviewedById;
+	private String reviewedByUsername;
+
+	
 
 }

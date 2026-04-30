@@ -20,10 +20,10 @@ public class SecurityConfig {
 
 				// swagger'i whitelist'e almak gerekiyor..
 				.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+				//
+				.requestMatchers("/login").permitAll()
 
 				//
-
-				.requestMatchers("/login").permitAll()
 
 				// org_admin'in tum center'lar uzerinde otoritesi vardir.
 				.requestMatchers("/api/v1/admin/centers/**").hasRole("ORG_ADMIN")
@@ -31,8 +31,6 @@ public class SecurityConfig {
 				.requestMatchers("/api/v1/admin/employees/**").hasAnyRole("ORG_ADMIN", "CENTER_ADMIN")
 				.requestMatchers("/api/v1/admin/coins/**").hasRole("ORG_ADMIN")
 
-				
-				
 				.requestMatchers(HttpMethod.POST, "/api/v1/transaction-requests").hasRole("BRANCH_OPERATOR")
 				.requestMatchers(HttpMethod.PATCH, "/api/v1/transaction-requests/*/approve").hasRole("CENTER_OPERATOR")
 				.requestMatchers(HttpMethod.PATCH, "/api/v1/transaction-requests/*/reject").hasRole("CENTER_OPERATOR")
@@ -43,7 +41,14 @@ public class SecurityConfig {
 				.requestMatchers("/api/v1/coins/**").authenticated()
 				.requestMatchers("/api/v1/centers/**", "/api/v1/branches/**", "/api/v1/wallets/**").authenticated()
 
+				// org'u silerim belki.
+				.requestMatchers(HttpMethod.GET, "/api/v1/admin/transactions")
+				.hasAnyRole("ORG_ADMIN", "CENTER_ADMIN", "BRANCH_ADMIN")
+
+				.requestMatchers(HttpMethod.POST, "/api/v1/wallets/*/deposit").hasRole("BRANCH_OPERATOR")
+				.requestMatchers(HttpMethod.POST, "/api/v1/wallets/*/withdraw").hasRole("BRANCH_OPERATOR")
 				
+				.requestMatchers(HttpMethod.POST, "/api/v1/wallets/*/convert").hasRole("BRANCH_OPERATOR")
 				
 				.anyRequest().authenticated())
 

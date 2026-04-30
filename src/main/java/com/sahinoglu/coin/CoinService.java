@@ -3,39 +3,44 @@ package com.sahinoglu.coin;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @Service
 public class CoinService {
 
 	private final CoinRepository coinRepository;
-	private final CoinApiClient coinApiClient;
+	private final RestClient restClient = RestClient.create("https://api.coingecko.com/api/v3");
 
-	public CoinService(CoinRepository coinRepository, CoinApiClient coinApiClient) {
-		this.coinRepository = coinRepository;
-		this.coinApiClient = coinApiClient;
-	}
-
+	@Transactional
 	public void syncCoins() {
+		List<CoinGeckoCoinResponse> apiCoins = restClient.get()
+				.uri("/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false")
+				.retrieve().body(new ParameterizedTypeReference<>() {
+				});
 
-		List<CoinApiResponse> apiCoins = coinApiClient.getCoins();
-		LocalDateTime now = LocalDateTime.now();// loop disinda olmasi daha dogru
-		for (CoinApiResponse c : apiCoins) {
+		LocalDateTime now = LocalDateTime.now();
 
-			Coin coin = coinRepository.findById(c.getId()).orElse(new Coin());
+		for (CoinGeckoCoinResponse apiCoin : apiCoins) {
+			Coin coin = coinRepository.findById(apiCoin.id()).orElseGet(Coin::new);
 
-			coin.setId(c.getId());
-			coin.setSymbol(c.getSymbol());
-			coin.setName(c.getName());
-			coin.setPrice(c.getPrice());
-			coin.setMarketCap(c.getMarketCap());
+			coin.setId(apiCoin.id());
+			coin.setSymbol(apiCoin.symbol().toUpperCase());
+			coin.setName(apiCoin.name());
+			coin.setPrice(apiCoin.currentPrice());
+			coin.setMarketCap(apiCoin.marketCap());
 			coin.setLastUpdated(now);
 
 			coinRepository.save(coin);
 		}
 	}
 
-	public List<Coin> listCoins() {
+	public List<Coin> list() {
 		return coinRepository.findAll();
 	}
 }
