@@ -18,7 +18,7 @@ public class CoinSyncScheduler {
 
 	@Scheduled(cron = "0 0 * * * *")
 	public void syncCoinsHourly() {
-	    System.out.println("Coin sync started...");
+	    System.out.println("Coin sync started..."+ new Date());
 		coinService.syncCoins();
 	}
 }
