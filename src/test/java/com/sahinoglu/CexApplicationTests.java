@@ -1,4 +1,4 @@
-package com.sahinoglu.cex;
+package com.sahinoglu;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

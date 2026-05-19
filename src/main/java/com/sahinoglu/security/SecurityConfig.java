@@ -22,6 +22,13 @@ public class SecurityConfig {
 				.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
 				//
 				.requestMatchers("/login").permitAll()
+				
+				
+				.requestMatchers("/bizException").permitAll()
+				.requestMatchers("/nfException").permitAll()
+				.requestMatchers("/problematicCheckedException").permitAll()
+				.requestMatchers("/throwable").permitAll()
+
 
 				//
 

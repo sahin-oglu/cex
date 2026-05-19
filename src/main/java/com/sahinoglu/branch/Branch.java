@@ -15,6 +15,7 @@ import lombok.Data;
 @Table(name = "branches")
 @Data
 public class Branch {
+	
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

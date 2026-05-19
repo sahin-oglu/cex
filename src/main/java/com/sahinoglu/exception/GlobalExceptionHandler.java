@@ -11,6 +11,13 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+	private ResponseEntity<ExceptionResponse> buildResponse(Exception ex, HttpServletRequest request,
+			HttpStatus status) {
+		ExceptionResponse response = new ExceptionResponse(LocalDateTime.now(), status.value(),
+				status.getReasonPhrase(), ex.getMessage(), request.getRequestURI());
+
+		return ResponseEntity.status(status).body(response);
+	}
 
 	@ExceptionHandler(BusinessException.class)
 	public ResponseEntity<ExceptionResponse> handleBusiness(BusinessException ex, HttpServletRequest request) {
@@ -37,12 +44,4 @@ public class GlobalExceptionHandler {
 		return buildResponse(ex, request, HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 
-	private ResponseEntity<ExceptionResponse> buildResponse(Exception ex, HttpServletRequest request,
-			HttpStatus status) {
-
-		ExceptionResponse response = new ExceptionResponse(LocalDateTime.now(), status.value(),
-				status.getReasonPhrase(), ex.getMessage(), request.getRequestURI());
-
-		return ResponseEntity.status(status).body(response);
-	}
 }
