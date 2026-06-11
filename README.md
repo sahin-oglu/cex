@@ -1,10 +1,13 @@
 # CEX Backend System
 
-A role-based backend system that simulates controlled financial operations by combining traditional banking workflows with crypto asset management.
+A role-based backend system that simulates controlled financial operations by combining traditional banking workflows with crypto asset management. 
+CEX stands for Centralized Exchange.
 
 ## Table of Contents
 
 - [Project Overview](#project-overview)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
 - [Domain Model](#domain-model)
 - [Roles and Responsibilities](#roles-and-responsibilities)
 - [Requirements and Design Approach](#requirements-and-design-approach)
@@ -33,6 +36,90 @@ Key capabilities of the system include:
 - Role-based data scoping and authorization
 
 The project is implemented as a modular monolith, with a focus on clarity of design rather than distribution complexity.
+
+## Tech Stack
+
+* Java 21
+* Spring Boot 3.3.5
+* Spring Web
+* Spring Data JPA
+* Spring Security
+* Hibernate
+* PostgreSQL
+* Maven Wrapper
+* Springdoc OpenAPI / Swagger UI
+* CoinGecko API
+
+## Getting Started
+
+### Prerequisites
+
+Make sure the following are installed:
+
+* Java 21
+* PostgreSQL
+
+Maven does not need to be installed separately because the project includes Maven Wrapper.
+
+### Database Setup
+
+Create a PostgreSQL database named:
+
+```text
+cex_db
+```
+
+The application uses the following database configuration:
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/cex_db
+spring.datasource.username=${DB_USERNAME:postgres}
+spring.datasource.password=${DB_PASSWORD}
+```
+
+Before starting the application, define your PostgreSQL password as an environment variable.
+
+For macOS and Linux:
+
+```bash
+export DB_PASSWORD='your-postgresql-password'
+```
+
+Optionally, define a different PostgreSQL username:
+
+```bash
+export DB_USERNAME='your-postgresql-username'
+```
+
+If `DB_USERNAME` is not defined, the application uses `postgres` by default.
+
+### Run the Application
+
+```bash
+./mvnw spring-boot:run
+```
+
+The application starts at:
+
+```text
+http://localhost:8080
+```
+
+### Swagger UI
+
+Once the application is running, Swagger UI is available at:
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+### Run Tests
+
+Make sure `DB_PASSWORD` is defined in your terminal session, then run:
+
+```bash
+./mvnw test
+```
 
 ## Domain Model
 
