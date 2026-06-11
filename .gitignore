@@ -7,12 +7,12 @@
 .settings/
 .factorypath
 
-### Maven Wrapper ###
-.mvn/
-
 ### IntelliJ ###
 .idea/
 *.iml
+
+### Environment variables ###
+.env
 
 ### Logs ###
 *.log
