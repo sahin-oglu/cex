@@ -14,17 +14,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.sahinoglu.branch.Branch;
 import com.sahinoglu.branch.BranchRepository;
 import com.sahinoglu.center.Center;
 import com.sahinoglu.center.CenterRepository;
-import com.sahinoglu.employee.Employee;
-import com.sahinoglu.employee.EmployeeRepository;
-import com.sahinoglu.employee.EmployeeRequest;
-import com.sahinoglu.employee.EmployeeResponse;
-import com.sahinoglu.employee.EmployeeService;
-import com.sahinoglu.employee.Role;
 import com.sahinoglu.exception.BusinessException;
 
 /**
@@ -43,6 +38,10 @@ class EmployeeServiceTest {
 
 	@Mock
 	private CenterRepository centerRepository;
+	
+	@Mock
+	private PasswordEncoder passwordEncoder;
+
 
 	@InjectMocks
 	private EmployeeService employeeService;
@@ -71,7 +70,7 @@ class EmployeeServiceTest {
 		Employee savedEmployee = new Employee();
 		savedEmployee.setId(100L);
 		savedEmployee.setUsername(request.getUsername());
-		savedEmployee.setPassword(request.getPassword());
+		savedEmployee.setPassword(passwordEncoder.encode(request.getPassword()));
 		savedEmployee.setFirstName(request.getFirstName());
 		savedEmployee.setLastName(request.getLastName());
 		savedEmployee.setRole(request.getRole());

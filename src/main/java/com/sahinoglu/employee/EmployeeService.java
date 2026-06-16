@@ -3,6 +3,7 @@ package com.sahinoglu.employee;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 //import org.springframework.beans.BeanUtils;
 //import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,9 @@ public class EmployeeService {
 	private final EmployeeRepository repository;
 	private final BranchRepository branchRepository;
 	private final CenterRepository centerRepository;
+	
+    private final PasswordEncoder passwordEncoder;
+
 
 	// org_admin'in center'i null oldugu icin.
 	private EmployeeResponse mapToResponse(Employee employee) {
@@ -84,7 +88,9 @@ public class EmployeeService {
 
 		Employee employee = new Employee();
 		employee.setUsername(request.getUsername());
-		employee.setPassword(request.getPassword());
+		
+		employee.setPassword(passwordEncoder.encode(request.getPassword()));
+		
 		employee.setFirstName(request.getFirstName());
 		employee.setLastName(request.getLastName());
 		employee.setRole(request.getRole());

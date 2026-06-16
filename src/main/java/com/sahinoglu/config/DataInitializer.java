@@ -25,6 +25,9 @@ import com.sahinoglu.wallet.asset.WalletAssetRepository;
 
 import lombok.RequiredArgsConstructor;
 
+
+
+import org.springframework.security.crypto.password.PasswordEncoder;
 @Component
 @RequiredArgsConstructor
 /**
@@ -45,6 +48,12 @@ public class DataInitializer implements CommandLineRunner {
 	private final CenterRepository centerRepository;
 	private final CoinService coinService;
 	private final CoinRepository coinRepository;
+	
+	
+	
+	
+	// june16th
+	private final PasswordEncoder passwordEncoder;
 
 	@Override
 	public void run(String... args) {
@@ -55,7 +64,7 @@ public class DataInitializer implements CommandLineRunner {
 
 		Employee admin = new Employee();
 		admin.setUsername("admin");
-		admin.setPassword("admin");
+		admin.setPassword(passwordEncoder.encode("admin"));
 		admin.setFirstName("System");
 		admin.setLastName("Admin");
 		admin.setRole(Role.ORG_ADMIN);
@@ -67,7 +76,7 @@ public class DataInitializer implements CommandLineRunner {
 		c.setLocation("istanbul");
 		Employee cop = new Employee();
 		cop.setUsername("cop");
-		cop.setPassword("cop");
+		cop.setPassword(passwordEncoder.encode("cop"));
 		cop.setFirstName("cg");
 		cop.setLastName("yilmaz");
 		cop.setCenter(c);
@@ -78,7 +87,7 @@ public class DataInitializer implements CommandLineRunner {
 		b.setCenter(c);
 		Employee bop = new Employee();
 		bop.setUsername("bop");
-		bop.setPassword("bop");
+		bop.setPassword(passwordEncoder.encode("bop"));
 		bop.setFirstName("ib");
 		bop.setLastName("tuncer");
 		bop.setCenter(c);
