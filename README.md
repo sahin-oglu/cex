@@ -6,10 +6,10 @@ CEX stands for Centralized Exchange.
 ## Table of Contents
 
 - [Project Overview](#project-overview)
-- [Features] (#features)
+- [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
-- [Default Development Users] (#default-development-users)
+- [Default Development Users](#default-development-users)
 - [Domain Model](#domain-model)
 - [Roles and Responsibilities](#roles-and-responsibilities)
 - [Requirements and Design Approach](#requirements-and-design-approach)
@@ -135,6 +135,7 @@ Make sure `DB_PASSWORD` is defined in your terminal session, then run:
 ```bash
 ./mvnw test
 ```
+
 ### Default Development Users
 
 The application creates a few default users on startup for local development and testing:
