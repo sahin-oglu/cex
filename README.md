@@ -6,8 +6,10 @@ CEX stands for Centralized Exchange.
 ## Table of Contents
 
 - [Project Overview](#project-overview)
+- [Features] (#features)
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
+- [Default Development Users] (#default-development-users)
 - [Domain Model](#domain-model)
 - [Roles and Responsibilities](#roles-and-responsibilities)
 - [Requirements and Design Approach](#requirements-and-design-approach)
@@ -36,6 +38,19 @@ Key capabilities of the system include:
 - Role-based data scoping and authorization
 
 The project is implemented as a modular monolith, with a focus on clarity of design rather than distribution complexity.
+
+## Features
+
+- Role-based access control with Spring Security
+- Organization hierarchy: Center, Branch, Employee
+- Customer and wallet management
+- Multi-asset wallet structure
+- Deposit, withdrawal, and asset conversion operations
+- Transaction request and approval workflow
+- Immutable transaction history
+- Global exception handling
+- Swagger UI documentation
+- Coin price synchronization through CoinGecko API
 
 ## Tech Stack
 
@@ -120,6 +135,18 @@ Make sure `DB_PASSWORD` is defined in your terminal session, then run:
 ```bash
 ./mvnw test
 ```
+### Default Development Users
+
+The application creates a few default users on startup for local development and testing:
+
+| Username | Password | Role |
+|---|---|---|
+| admin | admin | ORG_ADMIN |
+| cop | cop | CENTER_OPERATOR |
+| bop | bop | BRANCH_OPERATOR |
+
+These credentials are intended only for local development.
+
 
 ## Domain Model
 
@@ -285,15 +312,6 @@ Instead of jumping into microservices early, the project keeps everything in a s
 - Faster iteration
 
 A modular monolith was a suitable approach for this project because the system benefits more from clear domain separation than from distributed infrastructure complexity.
-
-### Explicit DTO Naming
-
-DTO names are intentionally verbose, for example:
-
-- `TransactionRequestRequest`
-- `TransactionRequestResponse`
-
-This naming is not the prettiest option, but it is explicit and consistent.
 
 ### Service Layer Focus
 
