@@ -3,44 +3,66 @@ package com.sahinoglu.coin;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 @Service
 public class CoinService {
 
-	private final CoinRepository coinRepository;
-	private final RestClient restClient = RestClient.create("https://api.coingecko.com/api/v3");
+    private final CoinRepository coinRepository;
+    private final RestClient restClient;
 
-	@Transactional
-	public void syncCoins() {
-		List<CoinGeckoCoinResponse> apiCoins = restClient.get()
-				.uri("/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false")
-				.retrieve().body(new ParameterizedTypeReference<>() {
-				});
+    private final String vsCurrency;
+    private final int perPage;
 
-		LocalDateTime now = LocalDateTime.now();
+    public CoinService(
+            CoinRepository coinRepository,
+            @Value("${coingecko.base-url}") String baseUrl,
+            @Value("${coingecko.vs-currency}") String vsCurrency,
+            @Value("${coingecko.per-page}") int perPage
+    ) {
+        this.coinRepository = coinRepository;
+        this.restClient = RestClient.create(baseUrl);
+        this.vsCurrency = vsCurrency;
+        this.perPage = perPage;
+    }
 
-		for (CoinGeckoCoinResponse apiCoin : apiCoins) {
-			Coin coin = coinRepository.findById(apiCoin.id()).orElseGet(Coin::new);
+    @Transactional
+    public void syncCoins() {
+        List<CoinGeckoCoinResponse> apiCoins = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/coins/markets")
+                        .queryParam("vs_currency", vsCurrency)
+                        .queryParam("order", "market_cap_desc")
+                        .queryParam("per_page", perPage)
+                        .queryParam("page", 1)
+                        .queryParam("sparkline", false)
+                        .build())
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {
+                });
 
-			coin.setId(apiCoin.id());
-			coin.setSymbol(apiCoin.symbol().toUpperCase());
-			coin.setName(apiCoin.name());
-			coin.setPrice(apiCoin.currentPrice());
-			coin.setMarketCap(apiCoin.marketCap());
-			coin.setLastUpdated(now);
+        LocalDateTime now = LocalDateTime.now();
 
-			coinRepository.save(coin);
-		}
-	}
+        for (CoinGeckoCoinResponse apiCoin : apiCoins) {
+            Coin coin = coinRepository.findById(apiCoin.id()).orElseGet(Coin::new);
 
-	public List<Coin> list() {
-		return coinRepository.findAll();
-	}
+            coin.setId(apiCoin.id());
+            coin.setSymbol(apiCoin.symbol().toUpperCase());
+            coin.setName(apiCoin.name());
+            coin.setPrice(apiCoin.currentPrice());
+            coin.setMarketCap(apiCoin.marketCap());
+            coin.setLastUpdated(now);
+
+            coinRepository.save(coin);
+        }
+    }
+
+    public List<Coin> list() {
+        return coinRepository.findAll();
+    }
 }
