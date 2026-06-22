@@ -61,6 +61,7 @@ The project is implemented as a modular monolith, with a focus on clarity of des
 * Spring Security
 * Hibernate
 * PostgreSQL
+* Docker Compose
 * Maven Wrapper
 * Springdoc OpenAPI / Swagger UI
 * CoinGecko API
@@ -72,55 +73,25 @@ The project is implemented as a modular monolith, with a focus on clarity of des
 Make sure the following are installed:
 
 * Java 21
-* PostgreSQL
+* Docker Desktop, or Docker Engine with Docker Compose
 
 Maven does not need to be installed separately because the project includes Maven Wrapper.
 
-### Database Setup
+PostgreSQL does not need to be installed locally. The project includes a Docker Compose setup for running PostgreSQL in a container.
 
-Create a PostgreSQL database named:
+### Quick Start
 
-```text
-cex_db
-```
-
-The application uses the following database configuration:
-
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/cex_db
-spring.datasource.username=${DB_USERNAME:postgres}
-spring.datasource.password=${DB_PASSWORD}
-```
-
-Before starting the application, define your PostgreSQL password as an environment variable.
-
-For macOS and Linux:
+Start the PostgreSQL container:
 
 ```bash
-export DB_PASSWORD='your-postgresql-password'
+docker compose up -d
 ```
 
-Optionally, define a different PostgreSQL username:
-
-```bash
-export DB_USERNAME='your-postgresql-username'
-```
-
-If `DB_USERNAME` is not defined, the application uses `postgres` by default.
-
-### Run the Application
+Run the Spring Boot application:
 
 ```bash
 ./mvnw spring-boot:run
 ```
-
-The application starts at:
-
-```text
-http://localhost:8080
-```
-
-### Swagger UI
 
 Once the application is running, Swagger UI is available at:
 
@@ -128,15 +99,82 @@ Once the application is running, Swagger UI is available at:
 http://localhost:8080/swagger-ui.html
 ```
 
+### Database Setup with Docker Compose
+
+The Docker Compose setup starts a PostgreSQL database with the following local development configuration:
+
+```text
+Host: localhost
+Port: 5433
+Database: cex_db
+Username: postgres
+Password: postgres
+```
+
+Port `5433` is used on the host machine to avoid conflicts with any PostgreSQL instance that may already be running locally on the default `5432` port.
+
+The application connects to the database using the following default configuration:
+
+```properties
+spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5433/cex_db}
+spring.datasource.username=${DB_USERNAME:postgres}
+spring.datasource.password=${DB_PASSWORD:postgres}
+```
+
+These values are intended for local development only.
+
+If you want to override the default database configuration, define environment variables before running the application:
+
+```bash
+export DB_URL='jdbc:postgresql://localhost:5433/cex_db'
+export DB_USERNAME='postgres'
+export DB_PASSWORD='postgres'
+```
+
+### DBeaver Connection
+
+You can inspect the development database with DBeaver using the following connection settings:
+
+```text
+Host: localhost
+Port: 5433
+Database: cex_db
+Username: postgres
+Password: postgres
+```
+
 ### Run Tests
 
-Make sure `DB_PASSWORD` is defined in your terminal session, then run:
+Make sure the PostgreSQL container is running:
+
+```bash
+docker compose up -d
+```
+
+Then run:
 
 ```bash
 ./mvnw test
 ```
 
-### Default Development Users
+### Stop the Database Container
+
+To stop the PostgreSQL container without deleting the local database volume:
+
+```bash
+docker compose down
+```
+
+To stop the container and delete the local database volume:
+
+```bash
+docker compose down -v
+```
+
+Use `docker compose down -v` carefully because it removes the stored local database data.
+
+
+## Default Development Users
 
 The application creates a few default users on startup for local development and testing:
 
