@@ -3,13 +3,28 @@ package com.sahinoglu.employee;
 import com.sahinoglu.branch.Branch;
 import com.sahinoglu.center.Center;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+
 @Table(name = "employees")
 @AllArgsConstructor
-@NoArgsConstructor
 @Entity
 public class Employee {
 
@@ -32,11 +47,11 @@ public class Employee {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private Role role;
-	// optional true redundant ama dursun
-	@ManyToOne(optional = true)
+
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "center_id")
 	private Center center;
-	@ManyToOne(optional = true)
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "branch_id")
 	private Branch branch;
 }
