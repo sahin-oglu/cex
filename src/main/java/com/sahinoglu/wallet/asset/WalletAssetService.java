@@ -31,7 +31,8 @@ public class WalletAssetService {
 
 	public List<WalletAssetResponse> listAssets(Long walletId) {
 
-		Wallet wallet = walletRepository.findById(walletId).orElseThrow(() -> new RuntimeException("Wallet not found"));
+		Wallet wallet = walletRepository.findById(walletId)
+				.orElseThrow(() -> new NotFoundException("Wallet not found"));
 
 		validateWalletScope(wallet);
 
@@ -45,31 +46,42 @@ public class WalletAssetService {
 
 		Employee current = SecurityUtils.getCurrentEmployee();
 
+		Long centerId = SecurityUtils.getCurrentCenterId();
+
+		if (centerId == null) {
+			throw new ForbiddenException("Current user is not assigned to a center");
+		}
+		Long branchId = SecurityUtils.getCurrentCenterId();
+
+		if (branchId == null) {
+			throw new ForbiddenException("Current user is not assigned to a branch");
+		}
+
 		if (current.getRole() == Role.ORG_ADMIN) {
 			return;
 		}
 
 		if (current.getRole() == Role.CENTER_ADMIN || current.getRole() == Role.CENTER_OPERATOR) {
-			Long centerId = SecurityUtils.getCurrentCenterId();
+			centerId = SecurityUtils.getCurrentCenterId();
 
 			if (!wallet.getBranch().getCenter().getId().equals(centerId)) {
-				throw new RuntimeException("Cannot access wallet from another center");
+				throw new ForbiddenException("Cannot access wallet from another center");
 			}
 
 			return;
 		}
 
 		if (current.getRole() == Role.BRANCH_ADMIN || current.getRole() == Role.BRANCH_OPERATOR) {
-			Long branchId = SecurityUtils.getCurrentBranchId();
+			branchId = SecurityUtils.getCurrentBranchId();
 
 			if (!wallet.getBranch().getId().equals(branchId)) {
-				throw new RuntimeException("Cannot access wallet from another branch");
+				throw new ForbiddenException("Cannot access wallet from another branch");
 			}
 
 			return;
 		}
 
-		throw new RuntimeException("Unauthorized");
+		throw new ForbiddenException("Unauthorized");
 	}
 
 	// SADECE DEVELOPMENT ICIN.
