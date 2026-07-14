@@ -1,15 +1,77 @@
-<form th:action="@{/login}" method="post">
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>CEX Login</title>
+</head>
+
+<body>
+
+    <h1>CEX Login</h1>
 
     <div>
-        <label>Username</label>
-        <input type="text" name="username"/>
+        <label>Current user</label>
+        <input type="text" th:value="${currentUser}" readonly/>
     </div>
 
-    <div>
-        <label>Password</label>
-        <input type="password" name="password"/>
-    </div>
+    <p th:if="${param.error}">
+        Invalid username or password.
+    </p>
 
-    <button type="submit">Login</button>
+    <p th:if="${param.logout}">
+        Logged out successfully.
+    </p>
 
-</form>
+    <h2>Login</h2>
+
+    <form th:action="@{/login}" method="post">
+
+        <div>
+            <label>Username</label>
+            <input type="text" name="username"/>
+        </div>
+
+        <div>
+            <label>Password</label>
+            <input type="password" name="password"/>
+        </div>
+
+        <button type="submit">Login</button>
+
+    </form>
+
+    <hr>
+
+    <h2>Demo Users</h2>
+
+    <form th:action="@{/login}" method="post">
+        <input type="hidden" name="username" value="admin"/>
+        <input type="hidden" name="password" value="admin"/>
+
+        <button type="submit">
+            Login as Organization Admin
+        </button>
+    </form>
+
+    <form th:action="@{/login}" method="post">
+        <input type="hidden" name="username" value="cop"/>
+        <input type="hidden" name="password" value="cop"/>
+
+        <button type="submit">
+            Login as Center Operator
+        </button>
+    </form>
+
+    <form th:action="@{/login}" method="post">
+        <input type="hidden" name="username" value="bop"/>
+        <input type="hidden" name="password" value="bop"/>
+
+        <button type="submit">
+            Login as Branch Operator
+        </button>
+    </form>
+
+</body>
+
+</html>

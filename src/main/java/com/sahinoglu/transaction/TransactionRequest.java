@@ -26,7 +26,7 @@ import lombok.Setter;
  * This is not a DTO class. This name was used for the sake of keeping the
  * naming consistency throughout the project.
  * <p>
- * A Transaction Request is a separate entity that has it's own DTO objects.
+ * A Transaction Request is a separate entity that has its own DTO objects.
  * </p>
  */
 @Getter
