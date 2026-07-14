@@ -17,4 +17,8 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
 
 	List<Wallet> findByBranchCenterId(Long centerId);
 
+	List<Wallet> findByCustomerIdAndBranchId(Long customerId, Long branchId);
+
+	List<Wallet> findByCustomerIdAndBranchCenterId(Long customerId, Long centerId);
+
 }

@@ -1,7 +1,11 @@
 package com.sahinoglu.center;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -10,30 +14,32 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CenterController {
 
-	private final CenterService service;
+	private final CenterService centerService;
 
-	// Active list (non-admin kullanım)
 	@GetMapping("/centers")
-	public List<CenterResponse> list(@RequestParam(name = "active", required = false) Boolean active) {
-		if (active != null && active) {
-			return service.listActive();
-		}
-		return service.listAll();
+	public List<CenterResponse> listActive() {
+
+		return centerService.listActive();
 	}
 
-	// Management: create (ORG_ADMIN)
+	@GetMapping("/admin/centers")
+	public List<CenterResponse> listAllAdmin() {
+		return centerService.listAll();
+	}
+
 	@PostMapping("/admin/centers")
-	public CenterResponse create(@RequestBody CenterRequest request) {
-		return service.create(request);
+	@ResponseStatus(HttpStatus.CREATED)
+	public CenterResponse create(@Valid @RequestBody CenterRequest request) {
+		return centerService.create(request);
 	}
 
 	@PatchMapping("/admin/centers/{id}/deactivate")
 	public CenterResponse deactivate(@PathVariable Long id) {
-		return service.deactivate(id);
+		return centerService.deactivate(id);
 	}
 
 	@PatchMapping("/admin/centers/{id}/reactivate")
 	public CenterResponse reactivate(@PathVariable Long id) {
-		return service.reactivate(id);
+		return centerService.reactivate(id);
 	}
 }

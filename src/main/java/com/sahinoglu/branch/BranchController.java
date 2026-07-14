@@ -6,28 +6,22 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class BranchController {
 
 	private final BranchService branchService;
 
-	// constructor injection daha iyiymis.
-	// lombok.RequiredArgsConstructor da ayni isi yapiyor bu ibretlik dursun burada.
-	public BranchController(BranchService branchService) {
-		this.branchService = branchService;
-	}
-
 	@GetMapping("/branches")
-	public List<BranchResponse> list(@RequestParam(name = "active", required = false) Boolean active) {
-		if (active != null && active) {
+	public List<BranchResponse> listActive() {
 
-			return branchService.listActive();
-		}
-		return branchService.listAll();
+		return branchService.listActive();
 	}
 
-	// Admin has access to all branches
 	@GetMapping("/admin/branches")
 	public List<BranchResponse> listAllAdmin() {
 		return branchService.listAll();
@@ -35,11 +29,10 @@ public class BranchController {
 
 	@PostMapping("/admin/branches")
 	@ResponseStatus(HttpStatus.CREATED)
-	public BranchResponse create(@RequestBody BranchRequest request) {
+	public BranchResponse create(@Valid @RequestBody BranchRequest request) {
 		return branchService.create(request);
 	}
 
-	// put yerine patch encouraged imis??
 	@PatchMapping("/admin/branches/{id}/deactivate")
 	public BranchResponse deactivate(@PathVariable Long id) {
 		return branchService.deactivate(id);

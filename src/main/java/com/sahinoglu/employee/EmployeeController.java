@@ -16,16 +16,16 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1")
 public class EmployeeController {
 
-	private final EmployeeService service;
+	private final EmployeeService employeeService;
 
 	@GetMapping("/admin/employees")
 	public List<EmployeeResponse> getList() {
-		return service.list();
+		return employeeService.list();
 	}
 
 	@PostMapping("/admin/employees")
 	public EmployeeResponse create(@Valid @RequestBody EmployeeRequest request) {
-		return service.create(request);
+		return employeeService.create(request);
 	}
 
 }

@@ -13,18 +13,18 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CustomerController {
 
-	private final CustomerService service;
-
+	private final CustomerService customerService;
+	
 	@GetMapping("/customers")
-	public List<CustomerResponse> list(@RequestParam(name = "active", required = false) Boolean active) {
-		return service.listAll();
+	public List<CustomerResponse> list() {
+		return customerService.listAll();
 	}
 
 	@PostMapping("/admin/customers")
 	@ResponseStatus(HttpStatus.CREATED)
 	public CustomerResponse create(@Valid @RequestBody CustomerRequest request) {
 
-		return service.create(request);
+		return customerService.create(request);
 	}
 
 }

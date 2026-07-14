@@ -1,6 +1,5 @@
 package com.sahinoglu.wallet;
 
-import java.math.BigDecimal;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -23,9 +23,10 @@ public class EmployeeRequest {
 	@NotNull
 
 	private Role role;
-
+	
+	
 	private Long branchId;
-	// bu business validation'u service katmanina tasiyoruz..
+	// the validations for these fields are handled in service layer.
 //	@NotNull
 	private Long centerId;
 }
