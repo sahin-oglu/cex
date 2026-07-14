@@ -1,6 +1,5 @@
 package com.sahinoglu.coin;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,11 +13,11 @@ public class CoinSyncScheduler {
 
 	private final CoinService coinService;
 
-	// her saat basi
+	// every hourmark
 
 	@Scheduled(cron = "0 0 * * * *")
 	public void syncCoinsHourly() {
-	    System.out.println("Coin sync started..."+ new Date());
+		System.out.println("Coin sync started..." + new Date());
 		coinService.syncCoins();
 	}
 }
