@@ -11,7 +11,7 @@ import lombok.Data;
  * The naming of the DTO classes within this package may seem funny, but I
  * decided to stick with the standard I had for this project.
  */
-public class TransactionRequestRequest {
+public class TransactionRequestRequestDTO {
 
 	@NotNull
 	private Long fromWalletId;

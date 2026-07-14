@@ -19,7 +19,7 @@ public class TransactionRequestController {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	public TransactionRequestResponse create(@Valid @RequestBody TransactionRequestRequest request) {
+	public TransactionRequestResponse create(@Valid @RequestBody TransactionRequestRequestDTO request) {
 		return service.createTransactionRequest(request);
 	}
 

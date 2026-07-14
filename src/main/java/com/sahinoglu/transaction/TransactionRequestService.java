@@ -48,7 +48,7 @@ public class TransactionRequestService {
 				tr.getRequestedBy().getId(), reviewedById, tr.getRequestedAt(), reviewedAt);
 	}
 
-	public TransactionRequestResponse createTransactionRequest(TransactionRequestRequest request) {
+	public TransactionRequestResponse createTransactionRequest(TransactionRequestRequestDTO request) {
 
 		Employee current = SecurityUtils.getCurrentEmployee();
 
@@ -73,7 +73,7 @@ public class TransactionRequestService {
 		return mapToResponse(saved);
 	}
 
-	private TransactionRequest buildTransactionRequest(TransactionRequestRequest request, Employee current,
+	private TransactionRequest buildTransactionRequest(TransactionRequestRequestDTO request, Employee current,
 			Wallet fromWallet, Wallet toWallet, Coin coin) {
 
 		TransactionRequest tr = new TransactionRequest();
@@ -241,7 +241,7 @@ public class TransactionRequestService {
 		}
 	}
 
-	private void validateRequestBasics(TransactionRequestRequest request, Employee current) {
+	private void validateRequestBasics(TransactionRequestRequestDTO request, Employee current) {
 		if (request.getFromWalletId() == null || request.getToWalletId() == null) {
 			throw new BusinessException("Wallet ids are required");
 		}
