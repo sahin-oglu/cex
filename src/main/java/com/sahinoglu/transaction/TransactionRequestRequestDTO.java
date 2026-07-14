@@ -10,6 +10,8 @@ import lombok.Data;
 /**
  * The naming of the DTO classes within this package may seem funny, but I
  * decided to stick with the standard I had for this project.
+ * 
+ * 
  */
 public class TransactionRequestRequestDTO {
 
@@ -23,7 +25,6 @@ public class TransactionRequestRequestDTO {
 	private String coinId; // "bitcoin"
 
 	@NotNull
-	//zaten service'de yapiyoruz bu isi
-//	@Positive 
+	@Positive
 	private BigDecimal amount;
 }

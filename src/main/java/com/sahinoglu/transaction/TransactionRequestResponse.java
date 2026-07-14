@@ -16,21 +16,21 @@ import lombok.Data;
 
 public class TransactionRequestResponse {
 
-    private Long id;
+	private Long id;
 
-    private BigDecimal amount;
+	private BigDecimal amount;
 
-    private Long fromWalletId;
-    private Long toWalletId;
+	private Long fromWalletId;
+	private Long toWalletId;
 
-    private String coinId;
-    private String coinSymbol;
+	private String coinId;
+	private String coinSymbol;
 
-    private TransactionRequestStatus status;
+	private TransactionRequestStatus status;
 
-    private Long requestedById;
-    private Long reviewedById;
+	private Long requestedById;
+	private Long reviewedById;
 
-    private LocalDateTime requestedAt;
-    private LocalDateTime reviewedAt;
+	private LocalDateTime requestedAt;
+	private LocalDateTime reviewedAt;
 }

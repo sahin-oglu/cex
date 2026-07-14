@@ -25,9 +25,13 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 /**
- * hayatimda yazdigim en karmasik class. validation method'lari en asagida.
- * belki de validation diye bir class acmaliydim ama ilk basta bu kadar
- * karmasiklasacagini bilemedim.
+ * Manages the lifecycle of transaction requests.
+ *
+ * <p>
+ * A branch operator creates a pending request. A center operator may approve or
+ * reject requests within the same center. Approval transfers the wallet assets
+ * and creates an immutable transaction record in a single transaction.
+ * </p>
  */
 public class TransactionRequestService {
 
@@ -260,7 +264,6 @@ public class TransactionRequestService {
 		if (request.getFromWalletId().equals(request.getToWalletId())) {
 			throw new BusinessException("Cannot transfer to same wallet");
 		}
-		// bunu boyle yapinca ne fark ediyor bak
 		if (request.getCoinId() == null) {
 			throw new BusinessException("Coin is required");
 		}
