@@ -3,6 +3,7 @@ package com.sahinoglu.transaction;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,10 +21,10 @@ public class TransactionController {
 		return transactionService.listTransactionHistory();
 	}
 
-	// lazim olmadigina kanaat getirildi.
-//    @GetMapping("/{walletId}")
-//    public List<TransactionResponse> listByWallet(@PathVariable Long walletId) {
-//        return transactionService.listByWallet(walletId);
-//    }
+	@GetMapping("/wallets/{walletId}/transactions")
+	public List<TransactionResponse> listByWallet(@PathVariable Long walletId) {
+
+		return transactionService.listByWallet(walletId);
+	}
 
 }

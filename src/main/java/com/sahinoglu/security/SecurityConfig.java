@@ -32,7 +32,11 @@ public class SecurityConfig {
 
 						.requestMatchers("/api/v1/admin/coins/**").hasRole("ORG_ADMIN")
 
+						// transactions
 						.requestMatchers(HttpMethod.GET, "/api/v1/admin/transactions")
+						.hasAnyRole("ORG_ADMIN", "CENTER_ADMIN", "BRANCH_ADMIN")
+
+						.requestMatchers(HttpMethod.GET, "/api/v1/wallets/*/transactions")
 						.hasAnyRole("ORG_ADMIN", "CENTER_ADMIN", "BRANCH_ADMIN")
 
 						// Transaction requests
