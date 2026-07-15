@@ -8,14 +8,13 @@ import org.springframework.stereotype.Service;
 import com.sahinoglu.employee.Employee;
 import com.sahinoglu.employee.EmployeeRepository;
 
+import lombok.AllArgsConstructor;
+
 @Service
+@AllArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
 	private final EmployeeRepository employeeRepository;
-
-	public CustomUserDetailsService(EmployeeRepository employeeRepository) {
-		this.employeeRepository = employeeRepository;
-	}
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
