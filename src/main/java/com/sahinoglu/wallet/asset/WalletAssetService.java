@@ -43,45 +43,39 @@ public class WalletAssetService {
 	}
 
 	private void validateWalletScope(Wallet wallet) {
-
 		Employee current = SecurityUtils.getCurrentEmployee();
 
-		Long centerId = SecurityUtils.getCurrentCenterId();
-
-		if (centerId == null) {
-			throw new ForbiddenException("Current user is not assigned to a center");
-		}
-		Long branchId = SecurityUtils.getCurrentCenterId();
-
-		if (branchId == null) {
-			throw new ForbiddenException("Current user is not assigned to a branch");
-		}
-
-		if (current.getRole() == Role.ORG_ADMIN) {
+		switch (current.getRole()) {
+		case ORG_ADMIN -> {
 			return;
 		}
 
-		if (current.getRole() == Role.CENTER_ADMIN || current.getRole() == Role.CENTER_OPERATOR) {
-			centerId = SecurityUtils.getCurrentCenterId();
+		case CENTER_ADMIN, CENTER_OPERATOR -> {
+			Long centerId = SecurityUtils.getCurrentCenterId();
+
+			if (centerId == null) {
+				throw new ForbiddenException("Current user is not assigned to a center");
+			}
 
 			if (!wallet.getBranch().getCenter().getId().equals(centerId)) {
 				throw new ForbiddenException("Cannot access wallet from another center");
 			}
-
-			return;
 		}
 
-		if (current.getRole() == Role.BRANCH_ADMIN || current.getRole() == Role.BRANCH_OPERATOR) {
-			branchId = SecurityUtils.getCurrentBranchId();
+		case BRANCH_ADMIN, BRANCH_OPERATOR -> {
+			Long branchId = SecurityUtils.getCurrentBranchId();
+
+			if (branchId == null) {
+				throw new ForbiddenException("Current user is not assigned to a branch");
+			}
 
 			if (!wallet.getBranch().getId().equals(branchId)) {
 				throw new ForbiddenException("Cannot access wallet from another branch");
 			}
-
-			return;
 		}
 
-		throw new ForbiddenException("Unauthorized");
+		default -> throw new ForbiddenException("Unauthorized");
+		}
 	}
 
 	// SADECE DEVELOPMENT ICIN.

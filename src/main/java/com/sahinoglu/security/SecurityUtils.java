@@ -4,6 +4,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.sahinoglu.employee.Employee;
+import com.sahinoglu.exception.AuthorizationException;
 
 public class SecurityUtils {
 
@@ -15,7 +16,7 @@ public class SecurityUtils {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 		if (authentication == null || !authentication.isAuthenticated()) {
-			throw new RuntimeException("No authenticated user");
+			throw new AuthorizationException("No authenticated user");
 		}
 
 		Object principal = authentication.getPrincipal();
@@ -24,7 +25,7 @@ public class SecurityUtils {
 			return userDetails;
 		}
 
-		throw new RuntimeException("Invalid authentication principal");
+		throw new AuthorizationException("Invalid authentication principal");
 	}
 
 	public static Long getCurrentCenterId() {

@@ -37,6 +37,13 @@ public class GlobalExceptionHandler {
 		return buildResponse(ex, request, HttpStatus.FORBIDDEN);
 	}
 
+	@ExceptionHandler(AuthorizationException.class)
+	public ResponseEntity<ExceptionResponse> handleAuthorization(AuthorizationException ex,
+			HttpServletRequest request) {
+
+		return buildResponse(ex, request, HttpStatus.UNAUTHORIZED);
+	}
+
 	// fallback
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ExceptionResponse> handleGeneric(Exception ex, HttpServletRequest request) {
