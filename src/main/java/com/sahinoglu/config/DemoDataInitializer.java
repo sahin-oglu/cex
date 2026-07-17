@@ -30,18 +30,22 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Creates a complete demo scenario when demo data is enabled.
- * <p>
- * Configure from /src/main/resources/application.properties -->
- * app.demo-data.enabled
- * </p>
+ *
+ * Configure using: app.demo-data.enabled=true
  */
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "app.demo-data.enabled", havingValue = "true")
 public class DemoDataInitializer implements CommandLineRunner {
 
+	private static final String CENTER_ADMIN_USERNAME = "cadmin";
+	private static final String CENTER_ADMIN_PASSWORD = "cadmin";
+
 	private static final String CENTER_OPERATOR_USERNAME = "cop";
 	private static final String CENTER_OPERATOR_PASSWORD = "cop";
+
+	private static final String BRANCH_ADMIN_USERNAME = "badmin";
+	private static final String BRANCH_ADMIN_PASSWORD = "badmin";
 
 	private static final String BRANCH_OPERATOR_USERNAME = "bop";
 	private static final String BRANCH_OPERATOR_PASSWORD = "bop";
@@ -59,8 +63,8 @@ public class DemoDataInitializer implements CommandLineRunner {
 	@Override
 	@Transactional
 	public void run(String... args) {
-		// don't create if the demo data already present.
 		if (demoDataAlreadyInitialized()) {
+			createMissingDemoAdmins();
 			return;
 		}
 
@@ -71,12 +75,32 @@ public class DemoDataInitializer implements CommandLineRunner {
 		return employeeRepository.findByUsername(CENTER_OPERATOR_USERNAME).isPresent();
 	}
 
-	private void createDemoData() {
+	/**
+	 * Adds the new admin demo accounts to an existing demo database without
+	 * recreating centers, branches, customers or wallets.
+	 */
+	private void createMissingDemoAdmins() {
+		Employee centerOperator = employeeRepository.findByUsername(CENTER_OPERATOR_USERNAME)
+				.orElseThrow(() -> new NotFoundException("Demo center operator not found"));
 
+		Employee branchOperator = employeeRepository.findByUsername(BRANCH_OPERATOR_USERNAME)
+				.orElseThrow(() -> new NotFoundException("Demo branch operator not found"));
+
+		Center center = centerOperator.getCenter();
+		Branch branch = branchOperator.getBranch();
+
+		createCenterAdminIfMissing(center);
+		createBranchAdminIfMissing(center, branch);
+	}
+
+	private void createDemoData() {
 		Center center = createDemoCenter();
 		Branch branch = createDemoBranch(center);
 
+		createCenterAdminIfMissing(center);
 		createCenterOperator(center);
+
+		createBranchAdminIfMissing(center, branch);
 		createBranchOperator(center, branch);
 
 		Coin bitcoin = getBitcoin();
@@ -87,7 +111,6 @@ public class DemoDataInitializer implements CommandLineRunner {
 	}
 
 	private Center createDemoCenter() {
-
 		Center center = new Center();
 		center.setName("istanbulCenter");
 		center.setLocation("istanbul");
@@ -96,7 +119,6 @@ public class DemoDataInitializer implements CommandLineRunner {
 	}
 
 	private Branch createDemoBranch(Center center) {
-
 		Branch branch = new Branch();
 		branch.setName("fatihBranch");
 		branch.setLocation("fatih");
@@ -105,26 +127,57 @@ public class DemoDataInitializer implements CommandLineRunner {
 		return branchRepository.save(branch);
 	}
 
-	private void createCenterOperator(Center center) {
+	private void createCenterAdminIfMissing(Center center) {
+		if (employeeRepository.findByUsername(CENTER_ADMIN_USERNAME).isPresent()) {
+			return;
+		}
 
+		Employee centerAdmin = new Employee();
+		centerAdmin.setUsername(CENTER_ADMIN_USERNAME);
+		centerAdmin.setPassword(passwordEncoder.encode(CENTER_ADMIN_PASSWORD));
+		centerAdmin.setFirstName("Center");
+		centerAdmin.setLastName("Admin");
+		centerAdmin.setCenter(center);
+		centerAdmin.setRole(Role.CENTER_ADMIN);
+
+		employeeRepository.save(centerAdmin);
+	}
+
+	private void createCenterOperator(Center center) {
 		Employee centerOperator = new Employee();
 		centerOperator.setUsername(CENTER_OPERATOR_USERNAME);
 		centerOperator.setPassword(passwordEncoder.encode(CENTER_OPERATOR_PASSWORD));
-		centerOperator.setFirstName("cg");
-		centerOperator.setLastName("yilmaz");
+		centerOperator.setFirstName("Center");
+		centerOperator.setLastName("Operator");
 		centerOperator.setCenter(center);
 		centerOperator.setRole(Role.CENTER_OPERATOR);
 
 		employeeRepository.save(centerOperator);
 	}
 
-	private void createBranchOperator(Center center, Branch branch) {
+	private void createBranchAdminIfMissing(Center center, Branch branch) {
+		if (employeeRepository.findByUsername(BRANCH_ADMIN_USERNAME).isPresent()) {
+			return;
+		}
 
+		Employee branchAdmin = new Employee();
+		branchAdmin.setUsername(BRANCH_ADMIN_USERNAME);
+		branchAdmin.setPassword(passwordEncoder.encode(BRANCH_ADMIN_PASSWORD));
+		branchAdmin.setFirstName("Branch");
+		branchAdmin.setLastName("Admin");
+		branchAdmin.setCenter(center);
+		branchAdmin.setBranch(branch);
+		branchAdmin.setRole(Role.BRANCH_ADMIN);
+
+		employeeRepository.save(branchAdmin);
+	}
+
+	private void createBranchOperator(Center center, Branch branch) {
 		Employee branchOperator = new Employee();
 		branchOperator.setUsername(BRANCH_OPERATOR_USERNAME);
 		branchOperator.setPassword(passwordEncoder.encode(BRANCH_OPERATOR_PASSWORD));
-		branchOperator.setFirstName("ib");
-		branchOperator.setLastName("tuncer");
+		branchOperator.setFirstName("Branch");
+		branchOperator.setLastName("Operator");
 		branchOperator.setCenter(center);
 		branchOperator.setBranch(branch);
 		branchOperator.setRole(Role.BRANCH_OPERATOR);
@@ -133,7 +186,6 @@ public class DemoDataInitializer implements CommandLineRunner {
 	}
 
 	private Coin getBitcoin() {
-
 		if (coinRepository.findById("bitcoin").isEmpty()) {
 			coinService.syncCoins();
 		}
@@ -142,7 +194,6 @@ public class DemoDataInitializer implements CommandLineRunner {
 	}
 
 	private void createDemoCustomer(String name, String phone, Branch branch, Coin bitcoin) {
-
 		Customer customer = new Customer();
 		customer.setName(name);
 		customer.setPhone(phone);
