@@ -26,11 +26,21 @@ public class SecurityConfig {
 						// Organization administration
 						.requestMatchers("/api/v1/admin/centers/**").hasRole("ORG_ADMIN")
 
+						.requestMatchers(HttpMethod.POST, "/api/v1/admin/branches").hasRole("ORG_ADMIN")
+
 						.requestMatchers("/api/v1/admin/branches/**").hasAnyRole("ORG_ADMIN", "CENTER_ADMIN")
+
+						.requestMatchers(HttpMethod.POST, "/api/v1/admin/employees").hasRole("ORG_ADMIN")
 
 						.requestMatchers("/api/v1/admin/employees/**").hasAnyRole("ORG_ADMIN", "CENTER_ADMIN")
 
 						.requestMatchers("/api/v1/admin/coins/**").hasRole("ORG_ADMIN")
+
+						// Customer management
+						.requestMatchers(HttpMethod.POST, "/api/v1/admin/customers").hasRole("BRANCH_OPERATOR")
+
+						.requestMatchers(HttpMethod.GET, "/api/v1/admin/customers")
+						.hasAnyRole("ORG_ADMIN", "CENTER_ADMIN", "BRANCH_ADMIN", "BRANCH_OPERATOR")
 
 						// transactions
 						.requestMatchers(HttpMethod.GET, "/api/v1/admin/transactions")
@@ -45,6 +55,8 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.PATCH, "/api/v1/transaction-requests/*/approve",
 								"/api/v1/transaction-requests/*/reject")
 						.hasRole("CENTER_OPERATOR")
+
+						.requestMatchers(HttpMethod.GET, "/api/v1/transaction-requests").authenticated()
 
 						// Wallet operations
 						// These must be declared before the general /wallets/** rule.
@@ -62,7 +74,7 @@ public class SecurityConfig {
 								"/api/v1/wallets/**")
 						.authenticated()
 
-						.anyRequest().authenticated())
+						.anyRequest().denyAll())
 
 				.formLogin(login -> login.loginPage("/login").defaultSuccessUrl("/login", true).permitAll())
 				.logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/login"));

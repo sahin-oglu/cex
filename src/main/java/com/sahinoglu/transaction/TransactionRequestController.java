@@ -7,8 +7,6 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-
 
 @RestController
 @RequestMapping("/api/v1/transaction-requests")
@@ -33,7 +31,7 @@ public class TransactionRequestController {
 		return service.rejectTransactionRequest(id);
 	}
 
-	@GetMapping("/transaction-requests")
+	@GetMapping
 	public List<TransactionRequestResponse> list() {
 		return service.list();
 	}

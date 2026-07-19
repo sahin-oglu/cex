@@ -10,18 +10,17 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1/admin/transactions")
 @RequiredArgsConstructor
 public class TransactionController {
 
 	private final TransactionService transactionService;
 
-	@GetMapping
+	@GetMapping("/api/v1/admin/transactions")
 	public List<TransactionResponse> listTransactionHistory() {
 		return transactionService.listTransactionHistory();
 	}
 
-	@GetMapping("/wallets/{walletId}/transactions")
+	@GetMapping("/api/v1/wallets/{walletId}/transactions")
 	public List<TransactionResponse> listByWallet(@PathVariable Long walletId) {
 
 		return transactionService.listByWallet(walletId);
