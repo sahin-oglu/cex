@@ -13,6 +13,7 @@ import com.sahinoglu.employee.Role;
 import com.sahinoglu.exception.BusinessException;
 import com.sahinoglu.exception.ForbiddenException;
 import com.sahinoglu.exception.NotFoundException;
+import com.sahinoglu.security.ScopeGuard;
 import com.sahinoglu.security.SecurityUtils;
 import com.sahinoglu.wallet.Wallet;
 import com.sahinoglu.wallet.WalletRepository;
@@ -27,6 +28,7 @@ public class WalletAssetService {
 	private final WalletAssetRepository walletAssetRepository;
 	private final WalletRepository walletRepository;
 	private final CoinRepository coinRepository;
+	private final ScopeGuard scopeGuard;
 	private static final String USDT_ID = "tether";
 
 	public List<WalletAssetResponse> listAssets(Long walletId) {
@@ -43,53 +45,8 @@ public class WalletAssetService {
 	}
 
 	private void validateWalletScope(Wallet wallet) {
-		Employee current = SecurityUtils.getCurrentEmployee();
-
-		switch (current.getRole()) {
-		case ORG_ADMIN -> {
-			return;
-		}
-
-		case CENTER_ADMIN, CENTER_OPERATOR -> {
-			Long centerId = SecurityUtils.getCurrentCenterId();
-
-			if (centerId == null) {
-				throw new ForbiddenException("Current user is not assigned to a center");
-			}
-
-			if (!wallet.getBranch().getCenter().getId().equals(centerId)) {
-				throw new ForbiddenException("Cannot access wallet from another center");
-			}
-		}
-
-		case BRANCH_ADMIN, BRANCH_OPERATOR -> {
-			Long branchId = SecurityUtils.getCurrentBranchId();
-
-			if (branchId == null) {
-				throw new ForbiddenException("Current user is not assigned to a branch");
-			}
-
-			if (!wallet.getBranch().getId().equals(branchId)) {
-				throw new ForbiddenException("Cannot access wallet from another branch");
-			}
-		}
-
-		default -> throw new ForbiddenException("Unauthorized");
-		}
+		scopeGuard.requireBranchOwnership(wallet.getBranch().getId(), wallet.getBranch().getCenter().getId());
 	}
-
-	// SADECE DEVELOPMENT ICIN.
-//	public void seedWalletAssets(Wallet wallet) {
-//		
-//		Coin btc = coinRepository.findById("bitcoin").orElseThrow(() -> new RuntimeException("BTC not found"));
-//
-//		WalletAsset asset = new WalletAsset();
-//		asset.setWallet(wallet);
-//		asset.setCoin(btc);
-//		asset.setAmount(new BigDecimal("0.1"));
-//
-//		walletAssetRepository.save(asset);
-//	}
 
 	@Transactional
 	public WalletAssetConversionResponse convert(Long walletId, WalletAssetConversionRequest request) {
@@ -212,13 +169,7 @@ public class WalletAssetService {
 			throw new ForbiddenException("Only branch operator can perform wallet asset operations");
 		}
 
-		Long branchId = SecurityUtils.getCurrentBranchId();
-
-		if (branchId == null) {
-			throw new ForbiddenException("Current user is not assigned to a branch");
-		}
-
-		if (!wallet.getBranch().getId().equals(branchId)) {
+		if (!wallet.getBranch().getId().equals(scopeGuard.requireCurrentBranchId())) {
 			throw new ForbiddenException("Cannot operate on wallet from another branch");
 		}
 	}

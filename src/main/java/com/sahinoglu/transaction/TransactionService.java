@@ -8,6 +8,7 @@ import com.sahinoglu.employee.Employee;
 import com.sahinoglu.employee.Role;
 import com.sahinoglu.exception.ForbiddenException;
 import com.sahinoglu.exception.NotFoundException;
+import com.sahinoglu.security.ScopeGuard;
 import com.sahinoglu.security.SecurityUtils;
 import com.sahinoglu.wallet.Wallet;
 import com.sahinoglu.wallet.WalletRepository;
@@ -21,6 +22,7 @@ public class TransactionService {
 
 	private final TransactionRepository transactionRepository;
 	private final WalletRepository walletRepository;
+	private final ScopeGuard scopeGuard;
 
 	public List<TransactionResponse> listTransactionHistory() {
 
@@ -33,22 +35,14 @@ public class TransactionService {
 
 		} else if (current.getRole() == Role.CENTER_ADMIN) {
 
-			Long centerId = SecurityUtils.getCurrentCenterId();
-
-			if (centerId == null) {
-				throw new ForbiddenException("Current user is not assigned to a center");
-			}
+			Long centerId = scopeGuard.requireCurrentCenterId();
 
 			transactions = transactionRepository.findByFromWalletBranchCenterIdOrToWalletBranchCenterId(centerId,
 					centerId);
 
 		} else if (current.getRole() == Role.BRANCH_ADMIN) {
 
-			Long branchId = SecurityUtils.getCurrentBranchId();
-
-			if (branchId == null) {
-				throw new ForbiddenException("Current user is not assigned to a branch");
-			}
+			Long branchId = scopeGuard.requireCurrentBranchId();
 
 			transactions = transactionRepository.findByFromWalletBranchIdOrToWalletBranchId(branchId, branchId);
 
@@ -81,13 +75,7 @@ public class TransactionService {
 
 		if (current.getRole() == Role.CENTER_ADMIN) {
 
-			Long centerId = SecurityUtils.getCurrentCenterId();
-
-			if (centerId == null) {
-				throw new ForbiddenException("Current user is not assigned to a center");
-			}
-
-			if (!wallet.getBranch().getCenter().getId().equals(centerId)) {
+			if (!wallet.getBranch().getCenter().getId().equals(scopeGuard.requireCurrentCenterId())) {
 				throw new ForbiddenException("Cannot view transactions for a wallet from another center");
 			}
 
@@ -96,13 +84,7 @@ public class TransactionService {
 
 		if (current.getRole() == Role.BRANCH_ADMIN) {
 
-			Long branchId = SecurityUtils.getCurrentBranchId();
-
-			if (branchId == null) {
-				throw new ForbiddenException("Current user is not assigned to a branch");
-			}
-
-			if (!wallet.getBranch().getId().equals(branchId)) {
+			if (!wallet.getBranch().getId().equals(scopeGuard.requireCurrentBranchId())) {
 				throw new ForbiddenException("Cannot view transactions for a wallet from another branch");
 			}
 

@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
-	// öhh
 	List<Transaction> findByFromWalletBranchIdOrToWalletBranchId(Long fromBranchId, Long toBranchId);
 
 	List<Transaction> findByFromWalletBranchCenterIdOrToWalletBranchCenterId(Long fromCenterId, Long toCenterId);

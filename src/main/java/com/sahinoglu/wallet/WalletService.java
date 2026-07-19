@@ -15,6 +15,7 @@ import com.sahinoglu.employee.Role;
 import com.sahinoglu.exception.BusinessException;
 import com.sahinoglu.exception.ForbiddenException;
 import com.sahinoglu.exception.NotFoundException;
+import com.sahinoglu.security.ScopeGuard;
 import com.sahinoglu.security.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class WalletService {
 	private final WalletRepository repository;
 	private final CustomerRepository customerRepository;
 	private final BranchRepository branchRepository;
+	private final ScopeGuard scopeGuard;
 
 	public WalletResponse create(WalletRequest request) {
 
@@ -56,23 +58,11 @@ public class WalletService {
 
 		} else if (current.getRole() == Role.CENTER_ADMIN || current.getRole() == Role.CENTER_OPERATOR) {
 
-			Long centerId = SecurityUtils.getCurrentCenterId();
-
-			if (centerId == null) {
-				throw new NotFoundException("Center not found in session");
-			}
-
-			wallets = repository.findByBranchCenterId(centerId);
+			wallets = repository.findByBranchCenterId(scopeGuard.requireCurrentCenterId());
 
 		} else if (current.getRole() == Role.BRANCH_ADMIN || current.getRole() == Role.BRANCH_OPERATOR) {
 
-			Long branchId = SecurityUtils.getCurrentBranchId();
-
-			if (branchId == null) {
-				throw new NotFoundException("Branch not found in session");
-			}
-
-			wallets = repository.findByBranchId(branchId);
+			wallets = repository.findByBranchId(scopeGuard.requireCurrentBranchId());
 
 		} else {
 			throw new ForbiddenException("Unauthorized");
@@ -93,23 +83,11 @@ public class WalletService {
 
 		} else if (current.getRole() == Role.CENTER_ADMIN || current.getRole() == Role.CENTER_OPERATOR) {
 
-			Long centerId = SecurityUtils.getCurrentCenterId();
-
-			if (centerId == null) {
-				throw new NotFoundException("Center not found in session");
-			}
-
-			wallets = repository.findByCustomerIdAndBranchCenterId(customerId, centerId);
+			wallets = repository.findByCustomerIdAndBranchCenterId(customerId, scopeGuard.requireCurrentCenterId());
 
 		} else if (current.getRole() == Role.BRANCH_ADMIN || current.getRole() == Role.BRANCH_OPERATOR) {
 
-			Long branchId = SecurityUtils.getCurrentBranchId();
-
-			if (branchId == null) {
-				throw new NotFoundException("Branch not found in session");
-			}
-
-			wallets = repository.findByCustomerIdAndBranchId(customerId, branchId);
+			wallets = repository.findByCustomerIdAndBranchId(customerId, scopeGuard.requireCurrentBranchId());
 
 		} else {
 			throw new ForbiddenException("Unauthorized");
@@ -175,85 +153,11 @@ public class WalletService {
 	}
 
 	private void validateScope(Branch branch) {
-
-		Employee current = SecurityUtils.getCurrentEmployee();
-
-		if (current.getRole() == Role.ORG_ADMIN) {
-			return;
-		}
-
-		if (current.getRole() == Role.CENTER_ADMIN || current.getRole() == Role.CENTER_OPERATOR) {
-
-			Long centerId = SecurityUtils.getCurrentCenterId();
-
-			if (centerId == null) {
-				throw new NotFoundException("Center not found in session");
-			}
-
-			if (!branch.getCenter().getId().equals(centerId)) {
-				throw new ForbiddenException("Cannot create wallet for another center");
-			}
-
-			return;
-		}
-
-		if (current.getRole() == Role.BRANCH_ADMIN || current.getRole() == Role.BRANCH_OPERATOR) {
-
-			Long currentBranchId = SecurityUtils.getCurrentBranchId();
-
-			if (currentBranchId == null) {
-				throw new NotFoundException("Branch not found in session");
-			}
-
-			if (!branch.getId().equals(currentBranchId)) {
-				throw new ForbiddenException("Cannot create wallet for another branch");
-			}
-
-			return;
-		}
-
-		throw new ForbiddenException("Unauthorized");
+		scopeGuard.requireBranchOwnership(branch.getId(), branch.getCenter().getId());
 	}
 
 	private void validateWalletScope(Wallet wallet) {
-
-		Employee current = SecurityUtils.getCurrentEmployee();
-
-		if (current.getRole() == Role.ORG_ADMIN) {
-			return;
-		}
-
-		if (current.getRole() == Role.CENTER_ADMIN || current.getRole() == Role.CENTER_OPERATOR) {
-
-			Long centerId = SecurityUtils.getCurrentCenterId();
-
-			if (centerId == null) {
-				throw new ForbiddenException("Current user is not assigned to a center");
-			}
-
-			if (!wallet.getBranch().getCenter().getId().equals(centerId)) {
-				throw new ForbiddenException("Cannot access wallet from another center");
-			}
-
-			return;
-		}
-
-		if (current.getRole() == Role.BRANCH_ADMIN || current.getRole() == Role.BRANCH_OPERATOR) {
-
-			Long branchId = SecurityUtils.getCurrentBranchId();
-
-			if (branchId == null) {
-				throw new ForbiddenException("Current user is not assigned to a branch");
-			}
-
-			if (!wallet.getBranch().getId().equals(branchId)) {
-				throw new ForbiddenException("Cannot access wallet from another branch");
-			}
-
-			return;
-		}
-
-		throw new ForbiddenException("Unauthorized");
+		scopeGuard.requireBranchOwnership(wallet.getBranch().getId(), wallet.getBranch().getCenter().getId());
 	}
 
 	private WalletResponse mapToResponse(Wallet wallet) {

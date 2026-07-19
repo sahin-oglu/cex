@@ -13,6 +13,7 @@ import com.sahinoglu.employee.Role;
 import com.sahinoglu.exception.BusinessException;
 import com.sahinoglu.exception.ForbiddenException;
 import com.sahinoglu.exception.NotFoundException;
+import com.sahinoglu.security.ScopeGuard;
 import com.sahinoglu.security.SecurityUtils;
 import com.sahinoglu.wallet.Wallet;
 import com.sahinoglu.wallet.WalletRepository;
@@ -40,16 +41,14 @@ public class TransactionRequestService {
 	private final WalletRepository walletRepository;
 	private final CoinRepository coinRepository;
 	private final WalletAssetRepository walletAssetRepository;
+	private final ScopeGuard scopeGuard;
 
 	private TransactionRequestResponse mapToResponse(TransactionRequest tr) {
-		// NPE yememek icin. cunku review'lanmamis request'lerin bu field'lari null
-		// olacaktir.
 		Long reviewedById = tr.getReviewedBy() != null ? tr.getReviewedBy().getId() : null;
-		LocalDateTime reviewedAt = tr.getReviewedAt() != null ? tr.getReviewedAt() : null;
 
 		return new TransactionRequestResponse(tr.getId(), tr.getAmount(), tr.getFromWallet().getId(),
 				tr.getToWallet().getId(), tr.getCoin().getId(), tr.getCoin().getSymbol(), tr.getStatus(),
-				tr.getRequestedBy().getId(), reviewedById, tr.getRequestedAt(), reviewedAt);
+				tr.getRequestedBy().getId(), reviewedById, tr.getRequestedAt(), tr.getReviewedAt());
 	}
 
 	public TransactionRequestResponse createTransactionRequest(TransactionRequestRequestDTO request) {
@@ -67,7 +66,7 @@ public class TransactionRequestService {
 		Coin coin = coinRepository.findById(request.getCoinId())
 				.orElseThrow(() -> new NotFoundException("Coin not found"));
 		validateWalletsAreUsable(fromWallet, toWallet);
-		validateScope(current, fromWallet);
+		validateScope(fromWallet);
 		validateBalance(fromWallet, coin, request.getAmount());
 
 		TransactionRequest tr = buildTransactionRequest(request, current, fromWallet, toWallet, coin);
@@ -106,7 +105,7 @@ public class TransactionRequestService {
 				.orElseThrow(() -> new NotFoundException("Request not found"));
 
 		validatePending(tr);
-		validateApprovalScope(current, tr);
+		validateApprovalScope(tr);
 
 		Wallet fromWallet = tr.getFromWallet();
 		Wallet toWallet = tr.getToWallet();
@@ -145,7 +144,7 @@ public class TransactionRequestService {
 				.orElseThrow(() -> new NotFoundException("Request not found"));
 
 		validatePending(tr);
-		validateApprovalScope(current, tr);
+		validateApprovalScope(tr);
 
 		tr.setStatus(TransactionRequestStatus.REJECTED);
 		tr.setReviewedBy(current);
@@ -166,23 +165,11 @@ public class TransactionRequestService {
 
 		} else if (current.getRole() == Role.CENTER_ADMIN || current.getRole() == Role.CENTER_OPERATOR) {
 
-			Long centerId = SecurityUtils.getCurrentCenterId();
-
-			if (centerId == null) {
-				throw new ForbiddenException("Current user is not assigned to a center");
-			}
-
-			requests = requestRepository.findByFromWalletBranchCenterId(centerId);
+			requests = requestRepository.findByFromWalletBranchCenterId(scopeGuard.requireCurrentCenterId());
 
 		} else if (current.getRole() == Role.BRANCH_ADMIN) {
 
-			Long branchId = SecurityUtils.getCurrentBranchId();
-
-			if (branchId == null) {
-				throw new ForbiddenException("Current user is not assigned to a branch");
-			}
-
-			requests = requestRepository.findByFromWalletBranchId(branchId);
+			requests = requestRepository.findByFromWalletBranchId(scopeGuard.requireCurrentBranchId());
 
 		} else if (current.getRole() == Role.BRANCH_OPERATOR) {
 
@@ -209,29 +196,17 @@ public class TransactionRequestService {
 		}
 	}
 
-	private void validateApprovalScope(Employee current, TransactionRequest tr) {
+	private void validateApprovalScope(TransactionRequest tr) {
 
-		Long centerId = SecurityUtils.getCurrentCenterId();
-
-		if (centerId == null) {
-			throw new NotFoundException("Center not found in session");
-		}
-
-		if (!tr.getFromWallet().getBranch().getCenter().getId().equals(centerId)) {
-			throw new BusinessException("Cannot approve request from another center");
+		if (!tr.getFromWallet().getBranch().getCenter().getId().equals(scopeGuard.requireCurrentCenterId())) {
+			throw new ForbiddenException("Cannot approve request from another center");
 		}
 	}
 
-	private void validateScope(Employee current, Wallet fromWallet) {
+	private void validateScope(Wallet fromWallet) {
 
-		Long currentBranchId = SecurityUtils.getCurrentBranchId();
-
-		if (currentBranchId == null) {
-			throw new NotFoundException("Branch not found in session");
-		}
-
-		if (!fromWallet.getBranch().getId().equals(currentBranchId)) {
-			throw new BusinessException("Cannot use wallet from another branch");
+		if (!fromWallet.getBranch().getId().equals(scopeGuard.requireCurrentBranchId())) {
+			throw new ForbiddenException("Cannot use wallet from another branch");
 		}
 	}
 
