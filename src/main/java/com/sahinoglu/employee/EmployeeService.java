@@ -188,23 +188,11 @@ public class EmployeeService {
 	}
 
 	private EmployeeResponse mapToResponse(Employee employee) {
-		EmployeeResponse response = new EmployeeResponse();
-		response.setId(employee.getId());
-		response.setUsername(employee.getUsername());
-		response.setFirstName(employee.getFirstName());
-		response.setLastName(employee.getLastName());
-		response.setRole(employee.getRole());
-		if (employee.getCenter() != null) {
-			response.setCenterId(employee.getCenter().getId());
-		}
+		Long branchId = employee.getBranch() != null ? employee.getBranch().getId() : null;
+		Long centerId = employee.getCenter() != null ? employee.getCenter().getId() : null;
 
-		if (employee.getBranch() != null) {
-			response.setBranchId(employee.getBranch().getId());
-		}
-
-		response.setActive(employee.isActive());
-
-		return response;
+		return new EmployeeResponse(employee.getId(), employee.getUsername(), employee.getFirstName(),
+				employee.getLastName(), employee.getRole(), branchId, centerId, employee.isActive());
 	}
 
 	private List<EmployeeResponse> mapList(List<Employee> employees) {
