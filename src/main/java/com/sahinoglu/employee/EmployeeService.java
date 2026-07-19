@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sahinoglu.branch.Branch;
 import com.sahinoglu.branch.BranchRepository;
@@ -13,6 +14,7 @@ import com.sahinoglu.center.CenterRepository;
 import com.sahinoglu.exception.BusinessException;
 import com.sahinoglu.exception.ForbiddenException;
 import com.sahinoglu.exception.NotFoundException;
+import com.sahinoglu.security.ScopeGuard;
 import com.sahinoglu.security.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class EmployeeService {
 	private final CenterRepository centerRepository;
 
 	private final PasswordEncoder passwordEncoder;
+	private final ScopeGuard scopeGuard;
 
 	public EmployeeResponse create(EmployeeRequest request) {
 
@@ -76,29 +79,59 @@ public class EmployeeService {
 
 		} else if (current.getRole() == Role.CENTER_ADMIN || current.getRole() == Role.CENTER_OPERATOR) {
 
-			Long centerId = SecurityUtils.getCurrentCenterId();
-
-			if (centerId == null) {
-				throw new NotFoundException("Center not found in session");
-			}
-
-			employees = repository.findByCenterId(centerId);
+			employees = repository.findByCenterId(scopeGuard.requireCurrentCenterId());
 
 		} else if (current.getRole() == Role.BRANCH_ADMIN || current.getRole() == Role.BRANCH_OPERATOR) {
 
-			Long branchId = SecurityUtils.getCurrentBranchId();
-
-			if (branchId == null) {
-				throw new NotFoundException("Branch not found in session");
-			}
-
-			employees = repository.findByBranchId(branchId);
+			employees = repository.findByBranchId(scopeGuard.requireCurrentBranchId());
 
 		} else {
 			throw new ForbiddenException("Unauthorized");
 		}
 
 		return mapList(employees);
+	}
+
+	@Transactional
+	public EmployeeResponse deactivate(Long employeeId) {
+
+		Employee employee = repository.findById(employeeId)
+				.orElseThrow(() -> new NotFoundException("Employee not found"));
+
+		scopeGuard.requireCenterOwnership(employee.getCenter() != null ? employee.getCenter().getId() : null);
+
+		if (!employee.isActive()) {
+			throw new BusinessException("Employee already inactive");
+		}
+
+		employee.setActive(false);
+
+		return mapToResponse(employee);
+	}
+
+	@Transactional
+	public EmployeeResponse reactivate(Long employeeId) {
+
+		Employee employee = repository.findById(employeeId)
+				.orElseThrow(() -> new NotFoundException("Employee not found"));
+
+		scopeGuard.requireCenterOwnership(employee.getCenter() != null ? employee.getCenter().getId() : null);
+
+		if (employee.isActive()) {
+			throw new BusinessException("Employee already active");
+		}
+
+		if (employee.getBranch() != null && !employee.getBranch().isActive()) {
+			throw new BusinessException("Cannot reactivate employee while branch is inactive");
+		}
+
+		if (employee.getCenter() != null && !employee.getCenter().isActive()) {
+			throw new BusinessException("Cannot reactivate employee while center is inactive");
+		}
+
+		employee.setActive(true);
+
+		return mapToResponse(employee);
 	}
 
 	private void validate(EmployeeRequest request) {
@@ -168,6 +201,8 @@ public class EmployeeService {
 		if (employee.getBranch() != null) {
 			response.setBranchId(employee.getBranch().getId());
 		}
+
+		response.setActive(employee.isActive());
 
 		return response;
 	}

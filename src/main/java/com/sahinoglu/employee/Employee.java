@@ -54,4 +54,7 @@ public class Employee {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "branch_id")
 	private Branch branch;
+
+	@Column(nullable = false)
+	private boolean active = true;
 }

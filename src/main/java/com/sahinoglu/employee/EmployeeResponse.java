@@ -21,4 +21,6 @@ public class EmployeeResponse {
 
 	private Long branchId;
 	private Long centerId;
+
+	private boolean active;
 }
