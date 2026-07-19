@@ -62,7 +62,12 @@ public class CoinService {
         }
     }
 
-    public List<Coin> list() {
-        return coinRepository.findAll();
+    public List<CoinResponse> list() {
+        return coinRepository.findAll().stream().map(this::mapToResponse).toList();
+    }
+
+    private CoinResponse mapToResponse(Coin coin) {
+        return new CoinResponse(coin.getId(), coin.getSymbol(), coin.getName(), coin.getPrice(), coin.getMarketCap(),
+                coin.getLastUpdated());
     }
 }
