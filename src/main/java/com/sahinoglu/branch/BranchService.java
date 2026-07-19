@@ -3,7 +3,6 @@ package com.sahinoglu.branch;
 import java.util.ArrayList;
 import java.util.List;
 
-//import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +13,7 @@ import com.sahinoglu.employee.Role;
 import com.sahinoglu.exception.BusinessException;
 import com.sahinoglu.exception.ForbiddenException;
 import com.sahinoglu.exception.NotFoundException;
+import com.sahinoglu.security.ScopeGuard;
 import com.sahinoglu.security.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +25,8 @@ public class BranchService {
 	private final BranchRepository branchRepository;
 
 	private final CenterRepository centerRepository;
+
+	private final ScopeGuard scopeGuard;
 
 	public BranchResponse create(BranchRequest request) {
 
@@ -53,6 +55,8 @@ public class BranchService {
 
 		Branch branch = branchRepository.findById(branchId).orElseThrow(() -> new NotFoundException("Branch not found"));
 
+		scopeGuard.requireCenterOwnership(branch.getCenter().getId());
+
 		if (!branch.isActive()) {
 			throw new BusinessException("Branch already inactive");
 		}
@@ -66,6 +70,8 @@ public class BranchService {
 	public BranchResponse reactivate(Long branchId) {
 		Branch branch = branchRepository.findById(branchId).orElseThrow(() -> new NotFoundException("Branch not found"));
 
+		scopeGuard.requireCenterOwnership(branch.getCenter().getId());
+
 		if (!branch.getCenter().isActive()) {
 			throw new BusinessException("Center inactive");
 		}
@@ -77,15 +83,6 @@ public class BranchService {
 		branch.setActive(true);
 
 		return mapToResponse(branch);
-	}
-
-	public List<BranchResponse> listAll() {
-		List<Branch> branchList = branchRepository.findAll();
-		List<BranchResponse> response = new ArrayList<>();
-		for (Branch branch : branchList) {
-			response.add(mapToResponse(branch));
-		}
-		return response;
 	}
 
 	public List<BranchResponse> listActive() {
@@ -111,21 +108,11 @@ public class BranchService {
 
 		} else if (current.getRole() == Role.CENTER_ADMIN || current.getRole() == Role.CENTER_OPERATOR) {
 
-			Long centerId = SecurityUtils.getCurrentCenterId();
-
-			if (centerId == null) {
-				throw new ForbiddenException("Current user is not assigned to a center");
-			}
-
-			branches = branchRepository.findListByCenterId(centerId);
+			branches = branchRepository.findListByCenterId(scopeGuard.requireCurrentCenterId());
 
 		} else if (current.getRole() == Role.BRANCH_ADMIN || current.getRole() == Role.BRANCH_OPERATOR) {
 
-			Long branchId = SecurityUtils.getCurrentBranchId();
-
-			if (branchId == null) {
-				throw new ForbiddenException("Current user is not assigned to a branch");
-			}
+			Long branchId = scopeGuard.requireCurrentBranchId();
 
 			branches = List
 					.of(branchRepository.findById(branchId).orElseThrow(() -> new NotFoundException("Branch not found")));
@@ -152,7 +139,4 @@ public class BranchService {
 
 		return responses;
 	}
-//	private List<Branch> listBranchesByName() {
-//		return null;
-//	}
 }

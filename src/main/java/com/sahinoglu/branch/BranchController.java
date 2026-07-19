@@ -23,8 +23,8 @@ public class BranchController {
 	}
 
 	@GetMapping("/admin/branches")
-	public List<BranchResponse> listAllAdmin() {
-		return branchService.listAll();
+	public List<BranchResponse> list() {
+		return branchService.list();
 	}
 
 	@PostMapping("/admin/branches")

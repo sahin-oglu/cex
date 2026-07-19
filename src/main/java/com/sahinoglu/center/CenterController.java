@@ -23,8 +23,8 @@ public class CenterController {
 	}
 
 	@GetMapping("/admin/centers")
-	public List<CenterResponse> listAllAdmin() {
-		return centerService.listAll();
+	public List<CenterResponse> list() {
+		return centerService.list();
 	}
 
 	@PostMapping("/admin/centers")

@@ -15,14 +15,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sahinoglu.center.Center;
-import com.sahinoglu.employee.Employee;
 import com.sahinoglu.exception.BusinessException;
+import com.sahinoglu.security.ScopeGuard;
 
 @ExtendWith(MockitoExtension.class)
 public class BranchServiceTest {
 
 	@Mock
 	private BranchRepository repository;
+
+	@Mock
+	private ScopeGuard scopeGuard;
 
 	@InjectMocks
 	private BranchService service;
@@ -47,7 +50,6 @@ public class BranchServiceTest {
 		branch.setActive(active);
 		branch.setCenter(center);
 
-		// branch zaten aktif? ne koymam lazim?
 		when(repository.findById(branchId)).thenReturn(Optional.of(branch));
 
 		// act
