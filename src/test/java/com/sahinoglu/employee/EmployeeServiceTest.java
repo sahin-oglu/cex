@@ -62,7 +62,6 @@ class EmployeeServiceTest {
 		Branch branch = new Branch();
 		branch.setId(branchId);
 		branch.setCenter(center);
-		request.setCenterId(centerId);
 		request.setBranchId(branchId);
 
 		// ---
@@ -80,8 +79,6 @@ class EmployeeServiceTest {
 		when(repository.existsByUsername(request.getUsername())).thenReturn(false);
 		// branch exists
 		when(branchRepository.findById(branchId)).thenReturn(Optional.of(branch));
-//center exists
-		when(centerRepository.findById(centerId)).thenReturn(Optional.of(center));
 //returns employee when saved
 		when(repository.save(any(Employee.class))).thenReturn(savedEmployee);
 
@@ -89,13 +86,13 @@ class EmployeeServiceTest {
 		EmployeeResponse response = employeeService.create(request);
 
 		// Assert kısmı
-		assertEquals(100L, response.getId());
-		assertEquals("branch.operator", response.getUsername());
-		assertEquals("Ali", response.getFirstName());
-		assertEquals("Yilmaz", response.getLastName());
-		assertEquals(Role.BRANCH_OPERATOR, response.getRole());
-		assertEquals(centerId, response.getCenterId());
-		assertEquals(branchId, response.getBranchId());
+		assertEquals(100L, response.id());
+		assertEquals("branch.operator", response.username());
+		assertEquals("Ali", response.firstName());
+		assertEquals("Yilmaz", response.lastName());
+		assertEquals(Role.BRANCH_OPERATOR, response.role());
+		assertEquals(centerId, response.centerId());
+		assertEquals(branchId, response.branchId());
 
 		verify(repository).save(any(Employee.class));
 
@@ -127,7 +124,6 @@ class EmployeeServiceTest {
 	void shouldThrowBusinessExceptionWhenBranchDoesNotBelongToGivenCenter() {
 		// Arrange
 		Long requestedCenterId = 1L;
-		Long actualBranchCenterId = 2L;
 		Long branchId = 10L;
 
 		EmployeeRequest request = new EmployeeRequest();
@@ -138,15 +134,6 @@ class EmployeeServiceTest {
 		request.setRole(Role.BRANCH_OPERATOR);
 		request.setCenterId(requestedCenterId);
 		request.setBranchId(branchId);
-
-		Center actualBranchCenter = new Center();
-		actualBranchCenter.setId(actualBranchCenterId);
-
-		Branch branch = new Branch();
-		branch.setId(branchId);
-		branch.setCenter(actualBranchCenter);
-
-		when(branchRepository.findById(branchId)).thenReturn(Optional.of(branch));
 
 		// Act + Assert
 		assertThrows(BusinessException.class, () -> {
