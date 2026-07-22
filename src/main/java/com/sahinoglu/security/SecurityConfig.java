@@ -32,7 +32,12 @@ public class SecurityConfig {
 
 						.requestMatchers(HttpMethod.POST, "/api/v1/admin/employees").hasRole("ORG_ADMIN")
 
-						.requestMatchers("/api/v1/admin/employees/**").hasAnyRole("ORG_ADMIN", "CENTER_ADMIN")
+						.requestMatchers(HttpMethod.GET, "/api/v1/admin/employees")
+						.hasAnyRole("ORG_ADMIN", "CENTER_ADMIN", "BRANCH_ADMIN")
+
+						.requestMatchers(HttpMethod.PATCH, "/api/v1/admin/employees/*/deactivate",
+								"/api/v1/admin/employees/*/reactivate")
+						.hasAnyRole("ORG_ADMIN", "CENTER_ADMIN")
 
 						.requestMatchers("/api/v1/admin/coins/**").hasRole("ORG_ADMIN")
 
