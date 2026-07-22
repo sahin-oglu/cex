@@ -3,7 +3,7 @@
 A role-based backend system that simulates controlled financial operations by combining traditional banking workflows with crypto asset management. 
 CEX stands for Centralized Exchange.
 
-This is my showcase project while I look for a backend job — built to demonstrate what I know, and honestly, to learn more of it along the way.
+This is my showcase project while I look for a backend job. Built to demonstrate what I know, and honestly, to learn more of it along the way.
 
 ## Table of Contents
 
