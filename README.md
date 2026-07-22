@@ -17,6 +17,7 @@ CEX stands for Centralized Exchange.
 - [API Overview](#api-overview)
 - [Exception Handling](#exception-handling)
 - [Example Flow](#example-flow)
+- [Known Limitations and Next Steps](#known-limitations-and-next-steps)
 
 ## Project Overview
 
@@ -48,6 +49,7 @@ The project is implemented as a modular monolith, with a focus on clarity of des
 - Deposit, withdrawal, and asset conversion operations
 - Transaction request and approval workflow
 - Immutable transaction history
+- Activation/deactivation lifecycle for centers, branches, employees, and wallets
 - Global exception handling
 - Swagger UI documentation
 - Coin price synchronization through CoinGecko API
@@ -181,7 +183,9 @@ The application creates a few default users on startup for local development and
 | Username | Password | Role |
 |---|---|---|
 | admin | admin | ORG_ADMIN |
+| cadmin | cadmin | CENTER_ADMIN |
 | cop | cop | CENTER_OPERATOR |
+| badmin | badmin | BRANCH_ADMIN |
 | bop | bop | BRANCH_OPERATOR |
 
 These credentials are intended only for local development.
@@ -207,6 +211,8 @@ Center -> Branch -> Employee
 - An `Employee` belongs either to a center or a branch depending on their role.
 
 This hierarchy is critical because all access control decisions are derived from it.
+
+Centers, Branches, and Employees are created exclusively by `ORG_ADMIN`. Once created, `CENTER_ADMIN` can view, deactivate, and reactivate the Branches and Employees within their own center — see [Lifecycle Management Instead of Deletion](#design-decisions).
 
 ### Banking Domain
 
@@ -270,7 +276,7 @@ Supervises a branch. Can view wallets, employees, transaction requests, and tran
 
 ### CENTER_ADMIN
 
-Manages a specific center. Can monitor branches under their center but does not perform operational financial actions.
+Manages a specific center. Can view the branches and employees within their center, and can deactivate or reactivate them. Does not create new branches or employees — that responsibility belongs to `ORG_ADMIN` — and does not perform operational financial actions.
 
 ### Core Design Principles
 
@@ -374,6 +380,12 @@ This way, invalid input is rejected early and business constraints are enforced 
 
 I intentionally avoided creating separate validation packages or over-engineering this part. However, service classes with heavy business rules, such as `TransactionRequestService` and `WalletService`, became delicate to manage as the project grew.
 
+### Centralized Scope Checks with ScopeGuard
+
+As more roles and scoped resources were added, the same authorization pattern kept repeating across services: get the current user, compare their center or branch id against the resource being accessed, throw an exception if they don't match.
+
+This was extracted into a single `ScopeGuard` component that every service now delegates to for scope checks, instead of re-implementing the same comparison logic. It also cleaned up a few inconsistencies where different services threw different exception types for the same kind of scope violation.
+
 ### WalletAsset Instead of Balance
 
 Instead of giving `Wallet` a single balance field, the model uses the following structure:
@@ -405,6 +417,10 @@ Transactions store snapshot fields such as:
 
 This is intentional. Even if an employee changes later, the transaction still reflects who actually performed the action at that time.
 
+### Lifecycle Management Instead of Deletion
+
+Centers, Branches, Employees, and Wallets can be deactivated and reactivated, but nothing is ever hard-deleted. This keeps historical data consistent — deactivating a branch, for example, doesn't affect the transactions it already has on record. Deactivating a Center also cascades to deactivate its Branches.
+
 ### No Public Registration
 
 There is no sign-up mechanism in the system. All employees are created by `ORG_ADMIN`.
@@ -415,30 +431,51 @@ This is not a public-facing system, but a controlled operational environment.
 
 Coin data is periodically updated through a scheduled task. This keeps prices fresh and allows conversions to use updated market data.
 
+### Response DTOs as Records
+
+Response DTOs are built once from an entity and returned as-is — nothing about them changes after construction. They're implemented as Java records rather than Lombok-generated classes, which matches that immutability directly and removes some boilerplate.
+
 ## API Overview
 
 Below is a high-level overview of the main API groups.
 
 ### Organization Management
 
-```text
-/api/v1/admin/centers
-/api/v1/admin/branches
-/api/v1/admin/employees
+```http
+GET   /api/v1/admin/centers
+POST  /api/v1/admin/centers
+PATCH /api/v1/admin/centers/{id}/deactivate
+PATCH /api/v1/admin/centers/{id}/reactivate
+
+GET   /api/v1/admin/branches
+POST  /api/v1/admin/branches
+PATCH /api/v1/admin/branches/{id}/deactivate
+PATCH /api/v1/admin/branches/{id}/reactivate
+
+GET   /api/v1/admin/employees
+POST  /api/v1/admin/employees
+PATCH /api/v1/admin/employees/{id}/deactivate
+PATCH /api/v1/admin/employees/{id}/reactivate
 ```
 
-Managed by `ORG_ADMIN` and `CENTER_ADMIN`. Used to build and maintain the organizational hierarchy.
+Creation is restricted to `ORG_ADMIN`. Viewing and deactivation/reactivation are available to `ORG_ADMIN` and `CENTER_ADMIN`, scoped to their own center (employees can also be viewed by `BRANCH_ADMIN`, scoped to their own branch).
+
+A read-only, unscoped list of active centers/branches (`GET /api/v1/centers`, `GET /api/v1/branches`) is also available to any authenticated user.
 
 ### Customer and Wallet Management
 
-```text
-/api/v1/admin/customers
-/api/v1/admin/wallets
-/api/v1/wallets
-/api/v1/wallets/{walletId}/assets
+```http
+GET   /api/v1/admin/customers
+POST  /api/v1/admin/customers
+GET   /api/v1/admin/wallets
+GET   /api/v1/wallets
+GET   /api/v1/wallets/customer/{customerId}
+GET   /api/v1/wallets/{walletId}/assets
+PATCH /api/v1/admin/wallets/{id}/deactivate
+PATCH /api/v1/admin/wallets/{id}/reactivate
 ```
 
-Customers are created by branch-level roles. Wallets are assigned to branches. Wallet assets can be viewed per wallet.
+Customers are created by `BRANCH_OPERATOR`. Wallets are assigned to branches, can be deactivated/reactivated, and wallet assets can be viewed per wallet.
 
 ### Wallet Operations
 
@@ -467,9 +504,10 @@ Created by `BRANCH_OPERATOR`. Approved or rejected by `CENTER_OPERATOR`. This fo
 
 ```http
 GET /api/v1/admin/transactions
+GET /api/v1/wallets/{walletId}/transactions
 ```
 
-Accessible by `BRANCH_ADMIN`, `CENTER_ADMIN`, and `ORG_ADMIN`. Returns immutable transaction records scoped based on role.
+Accessible by `BRANCH_ADMIN`, `CENTER_ADMIN`, and `ORG_ADMIN`. The first returns all transactions within the caller's scope; the second returns the history for a single wallet. Both return immutable transaction records.
 
 ### Coin Data
 
@@ -523,6 +561,8 @@ Instead of returning a generic `500 Internal Server Error`, the API returns stru
   "path": "/api/v1/transaction-requests"
 }
 ```
+
+Exceptions that aren't explicitly handled (an unexpected `NullPointerException`, a database error, and so on) don't get their raw message returned to the client. Instead, the API responds with a generic message, and the actual exception is logged server-side. This keeps internal details out of API responses without losing the ability to debug what happened.
 
 ## Example Flow
 
@@ -605,3 +645,12 @@ Admin roles can view:
 - Transaction history
 - Transaction requests
 - Wallet states
+
+## Known Limitations and Next Steps
+
+This project isn't polished to the level a real product would be, and a few things are intentionally left thin for now:
+
+- **Test coverage is limited.** A handful of unit tests exist, but most of the service layer (wallets, transactions, authorization) doesn't have automated coverage yet. Expanding this is a separate, deliberate pass rather than an oversight.
+- **The coin sync integration is minimal.** The CoinGecko client has no retry/backoff logic and doesn't handle the external API being unavailable particularly gracefully.
+- **Demo data is on by default** (`app.demo-data.enabled=true`) for local development convenience. It's not meant to represent how the system would be seeded in a real environment.
+- **No observability tooling.** Logging is basic; there's no metrics or tracing setup. That would be a reasonable next step if this ever needed to run somewhere real.
