@@ -3,6 +3,8 @@
 A role-based backend system that simulates controlled financial operations by combining traditional banking workflows with crypto asset management. 
 CEX stands for Centralized Exchange.
 
+This is my showcase project while I look for a backend job — built to demonstrate what I know, and honestly, to learn more of it along the way.
+
 ## Table of Contents
 
 - [Project Overview](#project-overview)
@@ -648,9 +650,9 @@ Admin roles can view:
 
 ## Known Limitations and Next Steps
 
-This project isn't polished to the level a real product would be, and a few things are intentionally left thin for now:
+This project isn't as polished as a real product would be. A few things are basic on purpose, not because I forgot about them:
 
-- **Test coverage is limited.** A handful of unit tests exist, but most of the service layer (wallets, transactions, authorization) doesn't have automated coverage yet. Expanding this is a separate, deliberate pass rather than an oversight.
-- **The coin sync integration is minimal.** The CoinGecko client has no retry/backoff logic and doesn't handle the external API being unavailable particularly gracefully.
-- **Demo data is on by default** (`app.demo-data.enabled=true`) for local development convenience. It's not meant to represent how the system would be seeded in a real environment.
-- **No observability tooling.** Logging is basic; there's no metrics or tracing setup. That would be a reasonable next step if this ever needed to run somewhere real.
+- **Tests aren't really there yet.** There are a few unit tests, but most of the service layer (wallets, transactions, authorization) has no automated tests. I'm planning to sit down and do this properly as its own task, instead of rushing it in.
+- **The coin sync part is pretty basic.** The CoinGecko client just fetches and saves. No retries, no real handling if the external API is down or slow.
+- **Demo data is on by default** (`app.demo-data.enabled=true`), just so the app is easy to try out locally. It's not how I'd seed a real environment.
+- **No proper logging/monitoring setup.** Logging is there, but basic. No metrics, no tracing, nothing fancy. That would be one of the first things I'd add if this ever had to run for real.
