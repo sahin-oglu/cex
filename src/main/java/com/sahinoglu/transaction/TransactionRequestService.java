@@ -264,7 +264,7 @@ public class TransactionRequestService {
 	}
 
 	private void validateCoinPriceAvailable(Coin coin) {
-		if (coin.getPrice() == null) {
+		if (coin.getPrice() == null || coin.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
 			throw new BusinessException("Coin price is not available");
 		}
 	}
