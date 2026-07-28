@@ -25,6 +25,8 @@ public class CenterService {
 	private final BranchRepository branchRepository;
 	private final ScopeGuard scopeGuard;
 
+	private final SecurityUtils securityUtils;
+
 	public CenterResponse create(CenterRequest request) {
 
 		if (centerRepository.existsByName(request.getName())) {
@@ -51,7 +53,7 @@ public class CenterService {
 
 	public List<CenterResponse> list() {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 
 		List<Center> centers;
 

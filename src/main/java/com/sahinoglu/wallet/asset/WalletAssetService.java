@@ -29,6 +29,8 @@ public class WalletAssetService {
 	private final WalletRepository walletRepository;
 	private final CoinRepository coinRepository;
 	private final ScopeGuard scopeGuard;
+
+	private final SecurityUtils securityUtils;
 	private static final String USDT_ID = "tether";
 
 	public List<WalletAssetResponse> listAssets(Long walletId) {
@@ -163,7 +165,7 @@ public class WalletAssetService {
 
 	private void validateBranchOperatorWalletAccess(Wallet wallet) {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 
 		if (current.getRole() != Role.BRANCH_OPERATOR) {
 			throw new ForbiddenException("Only branch operator can perform wallet asset operations");

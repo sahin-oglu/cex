@@ -24,9 +24,11 @@ public class TransactionService {
 	private final WalletRepository walletRepository;
 	private final ScopeGuard scopeGuard;
 
+	private final SecurityUtils securityUtils;
+
 	public List<TransactionResponse> listTransactionHistory() {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 
 		List<Transaction> transactions;
 
@@ -67,7 +69,7 @@ public class TransactionService {
 
 	private void validateWalletScope(Wallet wallet) {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 
 		if (current.getRole() == Role.ORG_ADMIN) {
 			return;

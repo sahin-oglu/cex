@@ -6,12 +6,17 @@ import com.sahinoglu.employee.Employee;
 import com.sahinoglu.employee.Role;
 import com.sahinoglu.exception.ForbiddenException;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class ScopeGuard {
+
+	private final SecurityUtils securityUtils;
 
 	public Long requireCurrentCenterId() {
 
-		Long centerId = SecurityUtils.getCurrentCenterId();
+		Long centerId = securityUtils.getCurrentCenterId();
 
 		if (centerId == null) {
 			throw new ForbiddenException("Current user is not assigned to a center");
@@ -22,7 +27,7 @@ public class ScopeGuard {
 
 	public Long requireCurrentBranchId() {
 
-		Long branchId = SecurityUtils.getCurrentBranchId();
+		Long branchId = securityUtils.getCurrentBranchId();
 
 		if (branchId == null) {
 			throw new ForbiddenException("Current user is not assigned to a branch");
@@ -33,7 +38,7 @@ public class ScopeGuard {
 
 	public void requireCenterOwnership(Long targetCenterId) {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 
 		if (current.getRole() == Role.ORG_ADMIN) {
 			return;
@@ -46,7 +51,7 @@ public class ScopeGuard {
 
 	public void requireBranchOwnership(Long targetBranchId, Long targetCenterId) {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 		Role role = current.getRole();
 
 		if (role == Role.ORG_ADMIN) {

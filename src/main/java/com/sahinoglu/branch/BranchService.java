@@ -28,6 +28,8 @@ public class BranchService {
 
 	private final ScopeGuard scopeGuard;
 
+	private final SecurityUtils securityUtils;
+
 	public BranchResponse create(BranchRequest request) {
 
 		Center center = centerRepository.findById(request.getCenterId())
@@ -98,7 +100,7 @@ public class BranchService {
 
 	public List<BranchResponse> list() {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 
 		List<Branch> branches;
 

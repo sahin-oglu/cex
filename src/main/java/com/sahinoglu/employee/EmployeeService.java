@@ -30,6 +30,8 @@ public class EmployeeService {
 	private final PasswordEncoder passwordEncoder;
 	private final ScopeGuard scopeGuard;
 
+	private final SecurityUtils securityUtils;
+
 	public EmployeeResponse create(EmployeeRequest request) {
 
 		validate(request);
@@ -69,7 +71,7 @@ public class EmployeeService {
 
 	public List<EmployeeResponse> list() {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 
 		List<Employee> employees;
 

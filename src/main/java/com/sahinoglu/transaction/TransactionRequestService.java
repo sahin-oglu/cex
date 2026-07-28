@@ -43,6 +43,8 @@ public class TransactionRequestService {
 	private final WalletAssetRepository walletAssetRepository;
 	private final ScopeGuard scopeGuard;
 
+	private final SecurityUtils securityUtils;
+
 	private TransactionRequestResponse mapToResponse(TransactionRequest tr) {
 		Long reviewedById = tr.getReviewedBy() != null ? tr.getReviewedBy().getId() : null;
 
@@ -53,7 +55,7 @@ public class TransactionRequestService {
 
 	public TransactionRequestResponse createTransactionRequest(TransactionRequestRequestDTO request) {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 
 		validateRequestBasics(request, current);
 
@@ -97,7 +99,7 @@ public class TransactionRequestService {
 	@Transactional
 	public TransactionRequestResponse approveTransactionRequest(Long requestId) {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 
 		validateApprovalRole(current);
 
@@ -136,7 +138,7 @@ public class TransactionRequestService {
 	@Transactional
 	public TransactionRequestResponse rejectTransactionRequest(Long requestId) {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 
 		validateApprovalRole(current);
 
@@ -155,7 +157,7 @@ public class TransactionRequestService {
 
 	public List<TransactionRequestResponse> list() {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 
 		List<TransactionRequest> requests;
 

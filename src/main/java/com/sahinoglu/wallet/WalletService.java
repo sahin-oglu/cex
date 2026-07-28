@@ -30,6 +30,8 @@ public class WalletService {
 	private final BranchRepository branchRepository;
 	private final ScopeGuard scopeGuard;
 
+	private final SecurityUtils securityUtils;
+
 	public WalletResponse create(WalletRequest request) {
 
 		Branch branch = validate(request);
@@ -48,7 +50,7 @@ public class WalletService {
 
 	public List<WalletResponse> list() {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 
 		List<Wallet> wallets;
 
@@ -73,7 +75,7 @@ public class WalletService {
 
 	public List<WalletResponse> listByCustomer(Long customerId) {
 
-		Employee current = SecurityUtils.getCurrentEmployee();
+		Employee current = securityUtils.getCurrentEmployee();
 
 		List<Wallet> wallets;
 

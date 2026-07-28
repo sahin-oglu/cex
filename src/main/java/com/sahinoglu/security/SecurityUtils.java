@@ -2,17 +2,19 @@ package com.sahinoglu.security;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 
 import com.sahinoglu.employee.Employee;
 import com.sahinoglu.exception.AuthorizationException;
 
+@Component
 public class SecurityUtils {
 
-	public static Employee getCurrentEmployee() {
+	public Employee getCurrentEmployee() {
 		return getCurrentUser().getEmployee();
 	}
 
-	public static CustomUserDetails getCurrentUser() {
+	public CustomUserDetails getCurrentUser() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 		if (authentication == null || !authentication.isAuthenticated()) {
@@ -28,7 +30,7 @@ public class SecurityUtils {
 		throw new AuthorizationException("Invalid authentication principal");
 	}
 
-	public static Long getCurrentCenterId() {
+	public Long getCurrentCenterId() {
 		Employee e = getCurrentEmployee();
 
 		if (e.getCenter() == null) {
@@ -38,7 +40,7 @@ public class SecurityUtils {
 		return e.getCenter().getId();
 	}
 
-	public static Long getCurrentBranchId() {
+	public Long getCurrentBranchId() {
 		Employee e = getCurrentEmployee();
 
 		if (e.getBranch() == null) {
